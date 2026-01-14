@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> {
 
       return date.isAfter(start.subtract(const Duration(milliseconds: 1))) &&
           date.isBefore(end.add(const Duration(milliseconds: 1)));
-    } else if (_dateFilter == 'Month') {
+    } else if (_dateFilter == 'This Month') {
       return date.year == now.year && date.month == now.month;
     } else if (_dateFilter == 'Year') {
       return date.year == now.year;

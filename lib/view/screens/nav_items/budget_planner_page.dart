@@ -49,7 +49,13 @@ class BudgetPlannerPage extends StatelessWidget {
                     ); // Budgets loading handles spinner
                   }
 
-                  final transactions = transactionSnapshot.data ?? [];
+                  var allTransactions = transactionSnapshot.data ?? [];
+                  if (!prefs.isPremium) {
+                    allTransactions = allTransactions
+                        .where((t) => !t.isSms)
+                        .toList();
+                  }
+                  final transactions = allTransactions;
 
                   // Logic: Calculate Total Budget, Total Spent, and budget per category
                   double totalBudget = 0;

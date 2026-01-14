@@ -1,4 +1,5 @@
 import 'package:expenxo/models/transaction_model.dart';
+import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
@@ -138,7 +139,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final allTransactions = snapshot.data ?? [];
+        final prefs = Provider.of<PreferencesProvider>(context);
+        var allTransactions = snapshot.data ?? [];
+
+        // Apply Premium Filter
+        if (!prefs.isPremium) {
+          allTransactions = allTransactions.where((t) => !t.isSms).toList();
+        }
+
         final transactions = _filterTransactions(allTransactions);
 
         // --- Data Aggregation Logic ---
@@ -209,7 +217,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         double netSavings = totalIncome - totalExpense;
         final currencyFormat = NumberFormat.currency(
           locale: 'en_IN',
-          symbol: '₹',
+          symbol: prefs.currencySymbol,
           decimalDigits: 0,
         );
 

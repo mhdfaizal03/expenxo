@@ -264,12 +264,15 @@ class FirestoreService {
     final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
     final allTransactions = await getTransactionsOnce();
+    final prefs = await SharedPreferences.getInstance();
+    final isPremium = prefs.getBool('isPremium') ?? false;
 
-    // Filter for this month
+    // Filter for this month and premium status
     final monthTransactions = allTransactions
         .where(
           (t) => t.date.isAfter(startOfMonth) && t.date.isBefore(endOfMonth),
         )
+        .where((t) => isPremium || !t.isSms)
         .toList();
 
     // 1. Check Income vs Expense

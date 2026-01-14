@@ -78,6 +78,34 @@ class _SettingsPageState extends State<SettingsPage> {
                       _buildProfileHeader(context),
                       const SizedBox(height: 16),
 
+                      // Premium Features Section (Demo)
+                      _buildSection(
+                        context,
+                        title: "Premium Features",
+                        children: [
+                          _buildSwitchTile(
+                            context,
+                            icon: Icons.diamond_outlined,
+                            title: "Automatic SMS Tracking",
+                            subtitle:
+                                "Unlock automatic expense tracking from SMS messages.",
+                            value: prefs.isPremium,
+                            onChanged: (val) async {
+                              await prefs.setPremiumStatus(val);
+                              if (val) {
+                                // Trigger init immediately if enabled
+                                // But initialization is usually on app start.
+                                // We can hint user to restart or handle dynamic start?
+                                // For now, next app start will sync.
+                                // Or we can import SmsService and call init?
+                                // SmsService().init(); // Requires import
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
                       // Notifications Section
                       _buildSection(
                         context,

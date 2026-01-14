@@ -147,7 +147,7 @@ class NotificationService {
           priority: fln.Priority.high,
         ),
       ),
-      androidScheduleMode: fln.AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: fln.AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: fln.DateTimeComponents.dateAndTime,
     );
   }

@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TransactionModel {
@@ -10,6 +9,7 @@ class TransactionModel {
   final String category;
   final DateTime date;
   final String description;
+  final bool isSms; // New field to identify SMS transactions
 
   TransactionModel({
     required this.id,
@@ -20,6 +20,7 @@ class TransactionModel {
     required this.category,
     required this.date,
     required this.description,
+    this.isSms = false,
   });
 
   factory TransactionModel.fromFirestore(DocumentSnapshot doc) {
@@ -33,6 +34,7 @@ class TransactionModel {
       category: data['category'] ?? 'General',
       date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       description: data['description'] ?? '',
+      isSms: data['isSms'] ?? false,
     );
   }
 
@@ -45,6 +47,7 @@ class TransactionModel {
       'category': category,
       'date': Timestamp.fromDate(date),
       'description': description,
+      'isSms': isSms,
     };
   }
 }

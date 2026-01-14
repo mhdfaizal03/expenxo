@@ -6,6 +6,7 @@ import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/providers/ai_provider.dart';
 import 'package:expenxo/services/notification_service.dart';
 import 'package:expenxo/view/auth/splash_screen.dart';
+import 'package:expenxo/services/sms_service.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Cancel any pending inactivity notification when app starts/resumes
     _notificationService.cancelNotification(888);
+    // Initialize SMS Listening (will request permissions)
+    SmsService().init();
   }
 
   @override

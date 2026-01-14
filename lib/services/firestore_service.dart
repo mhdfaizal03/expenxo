@@ -353,4 +353,52 @@ class FirestoreService {
       }
     }
   }
+
+  // --- Data Management ---
+
+  Future<void> deleteAllData() async {
+    if (_userId == null) return;
+
+    try {
+      // 1. Delete Transactions
+      final tSnap = await _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('transactions')
+          .get();
+      for (var doc in tSnap.docs) {
+        await doc.reference.delete();
+      }
+
+      // 2. Delete Budgets
+      final bSnap = await _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('budgets')
+          .get();
+      for (var doc in bSnap.docs) {
+        await doc.reference.delete();
+      }
+
+      // 3. Delete Categories
+      final cSnap = await _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('categories')
+          .get();
+      for (var doc in cSnap.docs) {
+        await doc.reference.delete();
+      }
+
+      // 4. Delete Notifications
+      await clearAllNotifications();
+
+      // 5. Reset SMS Sync
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('lastSmsSyncTime');
+    } catch (e) {
+      print("Error deleting all data: $e");
+      rethrow;
+    }
+  }
 }

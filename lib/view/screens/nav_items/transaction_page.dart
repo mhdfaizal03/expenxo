@@ -716,9 +716,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         }
 
                         final allTransactions = snapshot.data!;
-                        final filteredTransactions = allTransactions
-                            .where(_matchesFilter)
-                            .toList();
+                        final filteredTransactions = allTransactions.where((t) {
+                          // Filter out SMS transactions if not premium
+                          if (!prefs.isPremium && t.isSms) return false;
+                          return _matchesFilter(t);
+                        }).toList();
 
                         if (filteredTransactions.isEmpty) {
                           return Center(

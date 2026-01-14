@@ -17,10 +17,12 @@ class PreferencesProvider extends ChangeNotifier {
   bool _generalNotifications = true;
   bool _transactionAlerts = true;
   bool _budgetReminders = false;
+  bool _isPremium = false;
 
   bool get generalNotifications => _generalNotifications;
   bool get transactionAlerts => _transactionAlerts;
   bool get budgetReminders => _budgetReminders;
+  bool get isPremium => _isPremium;
 
   Future<void> _loadPreferences() async {
     try {
@@ -33,6 +35,7 @@ class PreferencesProvider extends ChangeNotifier {
       _generalNotifications = prefs.getBool('generalNotifications') ?? true;
       _transactionAlerts = prefs.getBool('transactionAlerts') ?? true;
       _budgetReminders = prefs.getBool('budgetReminders') ?? false;
+      _isPremium = prefs.getBool('isPremium') ?? false;
 
       notifyListeners();
     } catch (e) {
@@ -74,6 +77,13 @@ class PreferencesProvider extends ChangeNotifier {
     _budgetReminders = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('budgetReminders', value);
+    notifyListeners();
+  }
+
+  Future<void> setPremiumStatus(bool value) async {
+    _isPremium = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isPremium', value);
     notifyListeners();
   }
 }

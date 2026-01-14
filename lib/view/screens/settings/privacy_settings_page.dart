@@ -1,5 +1,7 @@
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:expenxo/services/firestore_service.dart';
 
 class PrivacySettingsPage extends StatelessWidget {
   const PrivacySettingsPage({super.key});
@@ -93,7 +95,41 @@ class PrivacySettingsPage extends StatelessWidget {
                           "Delete",
                           style: TextStyle(color: Colors.red),
                         ),
-                        onPressed: () => Navigator.pop(ctx),
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          try {
+                            // Show loading indicator
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+
+                            await Provider.of<FirestoreService>(
+                              context,
+                              listen: false,
+                            ).deleteAllData();
+
+                            // Hide loading
+                            Navigator.pop(context);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("All data deleted successfully."),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          } catch (e) {
+                            Navigator.pop(context); // Hide loading
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("Error deleting data: $e"),
+                              ),
+                            );
+                          }
+                        },
                       ),
                     ],
                   ),

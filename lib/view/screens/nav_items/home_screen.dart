@@ -9,8 +9,134 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-class HomePage extends StatelessWidget {
+import 'package:expenxo/utils/ui/ui_helper.dart';
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Date Filter State
+  String _dateFilter = 'This Month'; // Default to Month for Dashboard
+  final List<String> _dateOptions = [
+    'Today',
+    'Week',
+    'This Month',
+    'Year',
+    'All Time',
+    'By Date',
+    'Custom Range',
+  ];
+  DateTime? _selectedDate;
+  DateTimeRange? _selectedRange;
+
+  // Date Selection Helpers
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _selectedRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedRange) {
+      setState(() {
+        _selectedRange = picked;
+      });
+    }
+  }
+
+  bool _matchesFilter(TransactionModel transaction) {
+    if (_dateFilter == 'All Time') return true;
+
+    final date = transaction.date;
+    final now = DateTime.now();
+
+    if (_dateFilter == 'Today') {
+      return date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day;
+    } else if (_dateFilter == 'Week') {
+      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+      final endOfWeek = startOfWeek.add(const Duration(days: 6));
+
+      final start = DateTime(
+        startOfWeek.year,
+        startOfWeek.month,
+        startOfWeek.day,
+      );
+      final end = DateTime(
+        endOfWeek.year,
+        endOfWeek.month,
+        endOfWeek.day,
+        23,
+        59,
+        59,
+      );
+
+      return date.isAfter(start.subtract(const Duration(milliseconds: 1))) &&
+          date.isBefore(end.add(const Duration(milliseconds: 1)));
+    } else if (_dateFilter == 'Month') {
+      return date.year == now.year && date.month == now.month;
+    } else if (_dateFilter == 'Year') {
+      return date.year == now.year;
+    } else if (_dateFilter == 'By Date' && _selectedDate != null) {
+      return date.year == _selectedDate!.year &&
+          date.month == _selectedDate!.month &&
+          date.day == _selectedDate!.day;
+    } else if (_dateFilter == 'Custom Range' && _selectedRange != null) {
+      final start = DateTime(
+        _selectedRange!.start.year,
+        _selectedRange!.start.month,
+        _selectedRange!.start.day,
+      );
+      final end = DateTime(
+        _selectedRange!.end.year,
+        _selectedRange!.end.month,
+        _selectedRange!.end.day,
+        23,
+        59,
+        59,
+      );
+
+      return date.isAfter(start.subtract(const Duration(milliseconds: 1))) &&
+          date.isBefore(end.add(const Duration(milliseconds: 1)));
+    }
+
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +152,16 @@ class HomePage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final transactions = snapshot.data ?? [];
+        final prefs = Provider.of<PreferencesProvider>(context);
+        var allTransactions = snapshot.data ?? [];
+
+        // Apply Premium Filter
+        if (!prefs.isPremium) {
+          allTransactions = allTransactions.where((t) => !t.isSms).toList();
+        }
+
+        // Apply Date Filter
+        final transactions = allTransactions.where(_matchesFilter).toList();
 
         // Calculate Totals
         double totalIncome = 0;
@@ -44,14 +179,14 @@ class HomePage extends StatelessWidget {
         }
 
         final currentBalance = totalIncome - totalExpense;
-        final prefs = Provider.of<PreferencesProvider>(context);
         final currencyFormat = NumberFormat.currency(
           locale: 'en_IN',
           symbol: prefs.currencySymbol,
           decimalDigits: 0,
         );
 
-        // Find Latest Transactions
+        // Find Latest Transactions (Global Latest for sync, but showing filtered list's latest might be more intuitive)
+        // Let's show filtered latest as it feels more responsive to the filter.
         transactions.sort((a, b) => b.date.compareTo(a.date));
         TransactionModel? lastIncome;
         TransactionModel? lastExpense;
@@ -117,25 +252,115 @@ class HomePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     direction: Axis.vertical,
                     children: [
-                      // Use FutureBuilder to fetch user name from Firestore
-                      FutureBuilder<String>(
-                        future: firestoreService.getUserName(),
-                        builder: (context, userSnapshot) {
-                          final displayName =
-                              userSnapshot.data?.split(' ').first ?? '....';
-                          return Text(
-                            'Hello! $displayName...',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(
-                                context,
-                              ).textTheme.bodyLarge?.color,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Use FutureBuilder to fetch user name from Firestore
+                          FutureBuilder<String>(
+                            future: firestoreService.getUserName(),
+                            builder: (context, userSnapshot) {
+                              final displayName =
+                                  userSnapshot.data?.split(' ').first ?? '....';
+                              return Text(
+                                'Hello! $displayName...',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge?.color,
+                                ),
+                              );
+                            },
+                          ),
+
+                          if (_dateFilter == 'By Date' && _selectedDate != null)
+                            GestureDetector(
+                              onTap: () => _selectDate(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.mainColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  DateFormat('MMM dd').format(_selectedDate!),
+                                  style: TextStyle(
+                                    color: AppColors.mainColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else if (_dateFilter == 'Custom Range' &&
+                              _selectedRange != null)
+                            GestureDetector(
+                              onTap: () => _selectDateRange(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.mainColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  "${DateFormat('MMM dd').format(_selectedRange!.start)} - ${DateFormat('MMM dd').format(_selectedRange!.end)}",
+                                  style: TextStyle(
+                                    color: AppColors.mainColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
                             ),
-                          );
-                        },
+                        ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 10),
+
+                      // Filter Dropdown
+                      Container(
+                        height: 45,
+                        width: double.infinity,
+                        child: PremiumDropdown<String>(
+                          value: _dateFilter,
+                          icon: Icons.calendar_today_rounded,
+                          items: _dateOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value,
+                                style: TextStyle(
+                                  fontWeight: _dateFilter == value
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: _dateFilter == value
+                                      ? AppColors.mainColor
+                                      : Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.color,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (newValue) async {
+                            if (newValue != null) {
+                              setState(() => _dateFilter = newValue);
+                              if (newValue == 'By Date') {
+                                await _selectDate(context);
+                              } else if (newValue == 'Custom Range') {
+                                await _selectDateRange(context);
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
 
                       // Current Balance Card
                       Container(
@@ -152,11 +377,11 @@ class HomePage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Current Balance',
-                              style: TextStyle(
+                            Text(
+                              'Balance - $_dateFilter',
+                              style: const TextStyle(
                                 color: Colors.white70,
-                                fontSize: 14,
+                                fontSize: 13,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -170,7 +395,7 @@ class HomePage extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             const Text(
-                              'Total Available',
+                              'Available for this period',
                               style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
@@ -187,9 +412,9 @@ class HomePage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Monthly Overview',
-                              style: TextStyle(
+                            Text(
+                              '$_dateFilter Overview',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -225,7 +450,7 @@ class HomePage extends StatelessWidget {
                             Text(
                               totalIncome > 0
                                   ? "You've spent ${(totalExpense / totalIncome * 100).toStringAsFixed(0)}% of your income."
-                                  : "No income recorded.",
+                                  : "No income for this period.",
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
@@ -276,9 +501,9 @@ class HomePage extends StatelessWidget {
                       const SizedBox(height: 32),
 
                       // Latest Transactions Section
-                      const Text(
+                      Text(
                         'Recent Activity',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -286,7 +511,7 @@ class HomePage extends StatelessWidget {
                       const SizedBox(height: 16),
                       if (lastExpense == null && lastIncome == null)
                         const Text(
-                          "No transactions yet",
+                          "No transactions for this period",
                           style: TextStyle(color: Colors.grey),
                         )
                       else

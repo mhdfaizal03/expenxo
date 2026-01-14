@@ -1,114 +1,159 @@
+import 'package:expenxo/providers/ai_provider.dart';
+import 'package:expenxo/utils/constands/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
-class AIAssistantPage extends StatelessWidget {
+class AIAssistantPage extends StatefulWidget {
   const AIAssistantPage({super.key});
 
   @override
+  State<AIAssistantPage> createState() => _AIAssistantPageState();
+}
+
+class _AIAssistantPageState extends State<AIAssistantPage> {
+  final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage() async {
+    final text = _controller.text;
+    if (text.trim().isEmpty) return;
+
+    _controller.clear();
+
+    // Auto-scroll to bottom
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
+    await Provider.of<AIProvider>(context, listen: false).sendMessage(text);
+
+    // Scroll again after response
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
-            child: Container(
-              height: 40,
-              child: Center(
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(
+          "AI Assistant",
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Theme.of(context).cardColor,
+        elevation: 0,
+        centerTitle: false,
+      ),
+      body: Consumer<AIProvider>(
+        builder: (context, aiProvider, child) {
+          return Column(
+            children: [
+              // Chat List
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount:
+                      aiProvider.messages.length +
+                      (aiProvider.isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == aiProvider.messages.length) {
+                      // Loading Indicator
+                      return _buildLoadingBubble(context);
+                    }
+
+                    final msg = aiProvider.messages[index];
+                    return _buildChatMessage(
+                      context: context,
+                      isAI: !msg.isUser,
+                      text: msg.text,
+                    );
+                  },
+                ),
+              ),
+
+              // Input Area
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  border: Border(
+                    top: BorderSide(color: Theme.of(context).dividerColor),
+                  ),
+                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text(
-                      'AI Assistant',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 23,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          hintText: "Ask financial questions...",
+                          hintStyle: TextStyle(color: Colors.grey.shade400),
+                          filled: true,
+                          fillColor: Theme.of(context).scaffoldBackgroundColor,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.send_rounded),
+                      color: AppColors.mainColor,
+                      onPressed: aiProvider.isLoading ? null : _sendMessage,
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                // AI Message
-                _buildChatMessage(
-                  isAI: true,
-                  text:
-                      "Hello! I'm your AI financial assistant. How can I help you today?",
-                ),
-                // User Message
-                _buildChatMessage(
-                  isAI: false,
-                  text: "I want to save more money next month.",
-                ),
-                // AI Detailed Response
-                _buildChatMessage(
-                  isAI: true,
-                  text:
-                      "That's a great goal! Let's explore some strategies. Are you interested in budgeting, tracking specific expenses, or finding saving opportunities?",
-                ),
-
-                const SizedBox(height: 16),
-
-                // Suggested Question Chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildSuggestChip(
-                        "How much did I spend on groceries last month?",
-                      ),
-                      const SizedBox(width: 8),
-                      _buildSuggestChip("What's my net savings?"),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                const Text(
-                  "AI Tips & Suggestions",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-
-                // Spending Alert Card
-                _buildInsightCard(
-                  icon: Icons.lightbulb_outline,
-                  title: "Spending Alert: Food Expenses Up",
-                  description:
-                      "You spent 15% more on food and dining this month compared to last. Reviewing your habits could help you save.",
-                  actions: ["Create New Budget", "View Transactions"],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Subscription Reminder Card
-                _buildInsightCard(
-                  icon: Icons.subscriptions_outlined,
-                  title: "Subscription Reminder",
-                  description:
-                      "You have several active subscriptions. Would you like a breakdown to see where you can cut back?",
-                  actions: ["Review Subscriptions", "Track Spending"],
-                ),
-              ],
-            ),
-          ),
-
-          // Chat Input Area
-          _buildInputArea(),
-          SizedBox(height: 80),
-        ],
+              const SizedBox(height: 80), // For Navbar space if needed
+            ],
+          );
+        },
       ),
     );
   }
 
-  // --- UI Helpers ---
+  Widget _buildChatMessage({
+    required BuildContext context,
+    required bool isAI,
+    required String text,
+  }) {
+    final textColor = isAI
+        ? Theme.of(context).textTheme.bodyLarge?.color
+        : Colors.white;
 
-  Widget _buildChatMessage({required bool isAI, required String text}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -118,13 +163,13 @@ class AIAssistantPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (isAI) ...[
-            const CircleAvatar(
-              radius: 14,
-              backgroundColor: Color(0xFFF1F4F8),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColors.mainColor.withOpacity(0.1),
               child: Icon(
-                Icons.smart_toy_outlined,
-                size: 16,
-                color: Color(0xFF00C9A7),
+                Icons.smart_toy_rounded,
+                size: 18,
+                color: AppColors.mainColor,
               ),
             ),
             const SizedBox(width: 8),
@@ -133,34 +178,34 @@ class AIAssistantPage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isAI ? Colors.white : const Color(0xFF00C9A7),
+                color: isAI ? Theme.of(context).cardColor : AppColors.mainColor,
                 borderRadius: BorderRadius.circular(16).copyWith(
-                  topLeft: isAI
-                      ? const Radius.circular(0)
-                      : const Radius.circular(16),
-                  bottomRight: isAI
-                      ? const Radius.circular(16)
-                      : const Radius.circular(0),
+                  topLeft: isAI ? Radius.zero : const Radius.circular(16),
+                  bottomRight: isAI ? const Radius.circular(16) : Radius.zero,
                 ),
                 border: isAI
-                    ? Border.all(color: const Color(0xFFE2E8F0))
+                    ? Border.all(color: Theme.of(context).dividerColor)
                     : null,
               ),
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: isAI ? Colors.black87 : Colors.white,
-                  fontSize: 14,
-                  height: 1.4,
+              child: MarkdownBody(
+                data: text,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(color: textColor, fontSize: 14, height: 1.4),
+                  strong: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  listBullet: TextStyle(color: textColor),
                 ),
               ),
             ),
           ),
           if (!isAI) ...[
             const SizedBox(width: 8),
-            const CircleAvatar(
-              radius: 14,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=user'),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey.shade200,
+              child: const Icon(Icons.person, size: 18, color: Colors.grey),
             ),
           ],
         ],
@@ -168,149 +213,49 @@ class AIAssistantPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSuggestChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F4F8),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 13, color: Colors.black87),
-      ),
-    );
-  }
-
-  Widget _buildInsightCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required List<String> actions,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            Container(
-              width: 5,
-              decoration: const BoxDecoration(
-                color: Color(0xFF00C9A7),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(icon, color: const Color(0xFF00C9A7), size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: actions
-                          .map(
-                            (action) => Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: OutlinedButton(
-                                  onPressed: () {},
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(
-                                      color: Color(0xFF00C9A7),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    action,
-                                    style: const TextStyle(
-                                      color: Color(0xFF00C9A7),
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: const BoxDecoration(color: Colors.transparent),
+  Widget _buildLoadingBubble(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Ask me anything about your finances...",
-                hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-                filled: true,
-                fillColor: const Color(0xFFF1F4F8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.mainColor.withOpacity(0.1),
+            child: Icon(
+              Icons.smart_toy_rounded,
+              size: 18,
+              color: AppColors.mainColor,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF86E3D0),
-              shape: BoxShape.circle,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+              border: Border.all(color: Theme.of(context).dividerColor),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 20),
-              onPressed: () {},
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.mainColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "Thinking...",
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+              ],
             ),
           ),
         ],

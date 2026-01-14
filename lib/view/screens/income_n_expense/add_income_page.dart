@@ -1,4 +1,12 @@
+import 'package:expenxo/models/transaction_model.dart';
+import 'package:expenxo/services/auth_service.dart';
+import 'package:expenxo/services/firestore_service.dart';
+import 'package:expenxo/utils/constands/colors.dart';
+import 'package:expenxo/utils/ui/ui_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:expenxo/providers/preferences_provider.dart';
 
 class AddIncomePage extends StatefulWidget {
   const AddIncomePage({super.key});
@@ -9,30 +17,92 @@ class AddIncomePage extends StatefulWidget {
 
 class _AddIncomePageState extends State<AddIncomePage> {
   // State variables for form fields
-  String? selectedSource;
-  DateTime selectedDate = DateTime(2025, 12, 28);
-  final TextEditingController _amountController = TextEditingController(
-    text: "0.00",
-  );
+  String selectedSource = 'Salary';
+  DateTime selectedDate = DateTime.now();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  void _saveIncome() async {
+    final amountText = _amountController.text;
+    if (amountText.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter an amount')));
+      return;
+    }
+    final amount = double.tryParse(amountText);
+    if (amount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid amount')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final user = Provider.of<AuthService>(context, listen: false).currentUser;
+      if (user == null) throw Exception("User not logged in");
+
+      final transaction = TransactionModel(
+        id: '',
+        userId: user.uid,
+        title: selectedSource,
+        amount: amount,
+        type: 'Income',
+        category: selectedSource,
+        date: selectedDate,
+        description: _noteController.text,
+      );
+
+      await Provider.of<FirestoreService>(
+        context,
+        listen: false,
+      ).addTransaction(transaction);
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving income: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.black,
+            color: Theme.of(context).iconTheme.color,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Add Income',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.headlineSmall?.color,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -44,52 +114,32 @@ class _AddIncomePageState extends State<AddIncomePage> {
             _buildLabel("Amount"),
             TextField(
               controller: _amountController,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
               style: const TextStyle(fontSize: 16),
               decoration: _inputDecoration("").copyWith(
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.all(15),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(15),
                   child: Text(
-                    '₹',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    Provider.of<PreferencesProvider>(context).currencySymbol,
+                    style: const TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ),
+                hintText: "0.00",
               ),
             ),
             const SizedBox(height: 20),
 
             // Source Selection
             _buildLabel("Source"),
-            InkWell(
-              onTap: () {
-                // Logic to open source selection
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-                decoration: _containerDecoration(),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      size: 20,
-                      color: Colors.black54,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      selectedSource ?? "Select income source",
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: selectedSource == null
-                            ? Colors.grey
-                            : Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            PremiumDropdown<String>(
+              value: selectedSource,
+              icon: Icons.account_balance_wallet_outlined,
+              items: ['Salary', 'Freelance', 'Investment', 'Other'].map((
+                String item,
+              ) {
+                return DropdownMenuItem<String>(value: item, child: Text(item));
+              }).toList(),
+              onChanged: (val) => setState(() => selectedSource = val!),
             ),
             const SizedBox(height: 20),
 
@@ -113,15 +163,18 @@ class _AddIncomePageState extends State<AddIncomePage> {
                 decoration: _containerDecoration(),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_outlined,
                       size: 20,
-                      color: Colors.black54,
+                      color: Theme.of(context).iconTheme.color,
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      "December 28th, 2025",
-                      style: TextStyle(fontSize: 15),
+                    Text(
+                      DateFormat('MMM dd, yyyy').format(selectedDate),
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                     ),
                   ],
                 ),
@@ -132,6 +185,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
             // Notes Field
             _buildLabel("Notes"),
             TextField(
+              controller: _noteController,
               maxLines: 5,
               decoration: _inputDecoration(
                 "Add any additional details or context for this income...",
@@ -144,24 +198,24 @@ class _AddIncomePageState extends State<AddIncomePage> {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                onPressed: () {
-                  // Save logic
-                },
+                onPressed: _isLoading ? null : _saveIncome,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00C9A7),
+                  backgroundColor: AppColors.mainColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Save Income',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Save Income',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -176,10 +230,10 @@ class _AddIncomePageState extends State<AddIncomePage> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w500,
           fontSize: 14,
-          color: Colors.black87,
+          color: Theme.of(context).textTheme.bodyMedium?.color,
         ),
       ),
     );
@@ -189,7 +243,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
   BoxDecoration _containerDecoration() {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFE0E0E0)),
+      border: Border.all(color: Theme.of(context).dividerColor),
     );
   }
 
@@ -197,15 +251,15 @@ class _AddIncomePageState extends State<AddIncomePage> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+      hintStyle: TextStyle(color: Theme.of(context).hintColor, fontSize: 14),
       contentPadding: const EdgeInsets.all(16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(color: Theme.of(context).dividerColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF00C9A7)),
+        borderSide: BorderSide(color: AppColors.mainColor),
       ),
     );
   }

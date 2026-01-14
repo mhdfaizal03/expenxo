@@ -50,7 +50,7 @@ class _NavBarState extends State<NavBar> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(initialPage: selectedIndex);
   }
 
   @override
@@ -60,11 +60,7 @@ class _NavBarState extends State<NavBar> {
   }
 
   void _onNavTap(int index) {
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    _pageController.jumpToPage(index);
   }
 
   @override
@@ -81,16 +77,24 @@ class _NavBarState extends State<NavBar> {
           return navItems[index]["page"];
         },
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
       floatingActionButton: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0),
+
         child: Container(
+          margin: EdgeInsets.only(bottom: 15),
           height: 65,
           padding: EdgeInsets.all(10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            color: Colors.white,
-            boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black12)],
+            color: Theme.of(context).cardColor,
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 10,
+                color: Theme.of(context).shadowColor.withOpacity(0.1),
+              ),
+            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -107,14 +111,18 @@ class _NavBarState extends State<NavBar> {
                     Image.asset(
                       item["icon"],
                       height: 24,
-                      color: isSelected ? AppColors.mainColor : Colors.grey,
+                      color: isSelected
+                          ? AppColors.mainColor
+                          : Theme.of(context).iconTheme.color?.withOpacity(0.5),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item["name"],
                       style: TextStyle(
                         fontSize: 12,
-                        color: isSelected ? AppColors.mainColor : Colors.grey,
+                        color: isSelected
+                            ? AppColors.mainColor
+                            : Theme.of(context).textTheme.bodySmall?.color,
                         fontWeight: isSelected
                             ? FontWeight.w600
                             : FontWeight.w400,

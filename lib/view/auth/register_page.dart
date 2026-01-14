@@ -1,5 +1,8 @@
+
+import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,6 +14,56 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   bool _isPasswordVisible = false;
   bool _agreedToTerms = false;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _signUp() async {
+    if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please agree to the terms')),
+      );
+      return;
+    }
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.signUp(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _nameController.text.trim(),
+      );
+      if (mounted) {
+        Navigator.pop(context); // Go back to login or close register page
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
-                    'Expanxo',
+                    'Expenxo',
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
@@ -39,7 +92,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Join SpendWise and take control of your money.',
+                    'Join Expenxo and take control of your money.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey, fontSize: 15),
                   ),
@@ -47,15 +100,16 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   // Form Fields
                   _buildFieldLabel("Full Name"),
-                  _buildTextField("John Doe"),
+                  _buildTextField("John Doe", _nameController),
 
                   const SizedBox(height: 16),
                   _buildFieldLabel("Email Address"),
-                  _buildTextField("john.doe@example.com"),
+                  _buildTextField("john.doe@example.com", _emailController),
 
                   const SizedBox(height: 16),
                   _buildFieldLabel("Password"),
                   TextField(
+                    controller: _passwordController,
                     obscureText: !_isPasswordVisible,
                     decoration: _inputDecoration("********").copyWith(
                       suffixIcon: IconButton(
@@ -129,7 +183,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _isLoading ? null : _signUp,
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
                             AppColors.mainColor, // Lighter teal from image
@@ -138,14 +192,16 @@ class _RegisterPageState extends State<RegisterPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
 
@@ -232,8 +288,11 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildTextField(String hint) {
-    return TextField(decoration: _inputDecoration(hint));
+  Widget _buildTextField(String hint, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      decoration: _inputDecoration(hint),
+    );
   }
 
   Widget _socialButton(String text, IconData icon) {

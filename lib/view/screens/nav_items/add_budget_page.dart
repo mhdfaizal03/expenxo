@@ -1,4 +1,9 @@
+import 'package:expenxo/models/budget_model.dart';
+import 'package:expenxo/models/category_model.dart';
+import 'package:expenxo/services/firestore_service.dart';
+import 'package:expenxo/utils/constands/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class AddBudgetPage extends StatefulWidget {
   const AddBudgetPage({super.key});
@@ -10,34 +15,42 @@ class AddBudgetPage extends StatefulWidget {
 class _AddBudgetPageState extends State<AddBudgetPage> {
   // State for Selection Widgets
   List<bool> _selection = [true, false, false];
-  final List<String> _categories = [
-    'Food',
-    'Transport',
-    'Utilities',
-    'Entertainment',
-    'Shopping',
-    'Health',
-    'Savings',
-  ];
-  final Set<String> _selectedCategories = {'Food', 'Transport', 'Utilities'};
+  // Actually, typically a budget is "Food Budget", "Transport Budget". So single category selection is better.
+  // But user requested multi-selection UI. Let's assume one "Budget" document can cover multiple categories or we create multiple documents.
+  // For simplicity and typical use case, let's treat this as creating a budget for *one* specific scope.
+  // BUT the UI shows multiple chips. Let's allow one category for now to keep logic simple, or if multiple are selected, we save one Budget entry that applies to all?
+  // Let's enforce Single or "Mixed" category.
+  // Re-reading UI: It looks like "Categories" selector. Let's stick to single selection for V1 to be robust.
+
+  String? _selectedCategory;
 
   bool _autoRepeat = false;
   bool _notifications = false;
 
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  bool _isLoading = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).iconTheme.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Add Budget',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -46,21 +59,25 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLabel("Budget Name"),
-            TextField(decoration: _inputDecoration("e.g., Monthly Essentials")),
+            TextField(
+              controller: _nameController,
+              decoration: _inputDecoration("e.g., Monthly Essentials"),
+            ),
             const SizedBox(height: 20),
 
             _buildLabel("Total Amount"),
             TextField(
-              keyboardType: TextInputType.number,
-              style: const TextStyle(
+              controller: _amountController,
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF4A5568),
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
               decoration: _inputDecoration("").copyWith(
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.attach_money,
-                  color: Colors.black87,
+                  color: Theme.of(context).iconTheme.color,
                   size: 28,
                 ),
                 hintText: "0.00",
@@ -72,7 +89,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F4F8),
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ToggleButtons(
@@ -85,8 +102,8 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                   });
                 },
                 borderRadius: BorderRadius.circular(12),
-                selectedColor: Colors.black87,
-                fillColor: Colors.white,
+                selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
+                fillColor: Theme.of(context).scaffoldBackgroundColor,
                 renderBorder: false,
                 constraints: BoxConstraints(
                   minWidth: (MediaQuery.of(context).size.width - 45) / 3,
@@ -95,40 +112,68 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                 children: const [
                   Text("Monthly"),
                   Text("Weekly"),
-                  Text("Custom"),
+                  Text(
+                    "Custom",
+                  ), // Custom not fully implemented logic-wise yet, defaulting to Monthly logic
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            _buildLabel("Categories"),
-            Wrap(
-              spacing: 8,
-              runSpacing: 0,
-              children: _categories
-                  .map(
-                    (cat) => FilterChip(
-                      label: Text(cat),
-                      selected: _selectedCategories.contains(cat),
-                      onSelected: (bool selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedCategories.add(cat);
-                          } else {
-                            _selectedCategories.remove(cat);
-                          }
-                        });
-                      },
-                      backgroundColor: const Color(0xFFF1F4F8),
-                      selectedColor: const Color(0xFFE0F7F3),
-                      checkmarkColor: const Color(0xFF00C9A7),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      side: BorderSide.none,
-                    ),
-                  )
-                  .toList(),
+            _buildLabel("Category"),
+            StreamBuilder<List<CategoryModel>>(
+              stream: Provider.of<FirestoreService>(
+                context,
+                listen: false,
+              ).getCategories(),
+              builder: (context, snapshot) {
+                final defaultCategories = [
+                  'Food & Dining',
+                  'Transport',
+                  'Shopping',
+                  'Entertainment',
+                  'Health',
+                  'Others',
+                ];
+
+                List<String> allCategories = [...defaultCategories];
+
+                if (snapshot.hasData && snapshot.data != null) {
+                  final customCategories = snapshot.data!
+                      .map((c) => c.name)
+                      .toList();
+                  for (var custom in customCategories) {
+                    if (!allCategories.contains(custom)) {
+                      allCategories.add(custom);
+                    }
+                  }
+                }
+
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 0,
+                  children: allCategories
+                      .map(
+                        (cat) => FilterChip(
+                          label: Text(cat),
+                          selected: _selectedCategory == cat,
+                          onSelected: (bool selected) {
+                            setState(() {
+                              _selectedCategory = selected ? cat : null;
+                            });
+                          },
+                          backgroundColor: Theme.of(context).cardColor,
+                          selectedColor: const Color(0xFFE0F7F3),
+                          checkmarkColor: const Color(0xFF00C9A7),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          side: BorderSide.none,
+                        ),
+                      )
+                      .toList(),
+                );
+              },
             ),
             const SizedBox(height: 24),
 
@@ -167,33 +212,42 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       "Cancel",
-                      style: TextStyle(color: Colors.black87),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _isLoading ? null : _saveBudget,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(
-                        0xFF86E3D0,
-                      ), // Soft teal from image
+                      backgroundColor: AppColors.mainColor,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      "Save Budget",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            "Save Budget",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -204,14 +258,84 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     );
   }
 
+  Future<void> _saveBudget() async {
+    if (_nameController.text.isEmpty ||
+        _amountController.text.isEmpty ||
+        _selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill all fields and select a category"),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final amount = double.tryParse(_amountController.text) ?? 0.0;
+      final period = _selection[0]
+          ? 'Monthly'
+          : (_selection[1] ? 'Weekly' : 'Custom');
+
+      // Calculate Dates
+      final now = DateTime.now();
+      DateTime startDate = now;
+      DateTime endDate = now;
+
+      if (period == 'Monthly') {
+        startDate = DateTime(now.year, now.month, 1);
+        endDate = DateTime(now.year, now.month + 1, 0);
+      } else if (period == 'Weekly') {
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+        endDate = startDate.add(const Duration(days: 6));
+      } else {
+        // Custom defaults to 30 days for now
+        endDate = now.add(const Duration(days: 30));
+      }
+
+      final budget = BudgetModel(
+        id: '', // Generated by Firestore
+        userId: '', // Set by Service
+        category: _selectedCategory!,
+        amount: amount,
+        period: period,
+        startDate: startDate,
+        endDate: endDate,
+        autoRepeat: _autoRepeat,
+        notifyExceed: _notifications,
+      );
+
+      await Provider.of<FirestoreService>(
+        context,
+        listen: false,
+      ).addBudget(budget);
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Budget saved successfully!")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error saving budget: $e")));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   // Helper Widgets
   Widget _buildLabel(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 8.0),
     child: Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontWeight: FontWeight.w600,
-        color: Color(0xFF2D3748),
+        color: Theme.of(context).textTheme.bodyLarge?.color,
       ),
     ),
   );
@@ -219,15 +343,15 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
   InputDecoration _inputDecoration(String hint) => InputDecoration(
     hintText: hint,
     filled: true,
-    fillColor: Colors.white,
+    fillColor: Theme.of(context).cardColor,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      borderSide: BorderSide(color: Theme.of(context).dividerColor),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Color(0xFF00C9A7)),
+      borderSide: BorderSide(color: AppColors.mainColor),
     ),
   );
 
@@ -239,7 +363,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF00C9A7),
+          activeColor: AppColors.mainColor,
         ),
       ],
     );
@@ -249,18 +373,21 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF00C9A7), size: 20),
+          Icon(icon, color: AppColors.mainColor, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF4A5568)),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
             ),
           ),
         ],

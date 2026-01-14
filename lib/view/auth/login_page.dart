@@ -1,8 +1,10 @@
+
+import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/auth/register_page.dart';
 import 'package:expenxo/view/nav_bar.dart';
-import 'package:expenxo/view/screens/nav_items/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,6 +15,52 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _signIn() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.signIn(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+
+      if(authService.currentUser != null){
+        if(mounted){
+          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) =>  NavBar()), (route) => false);
+        }
+      }
+      // Navigation is handled by AuthWrapper loop in main.dart
+      // But we can pop if we pushed this page. 
+      // Since OnBoarding -> Login, AuthWrapper will replace OnBoarding with NavBar implicitly.
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +106,11 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 32),
 
                     // Email/Phone Input
-                    _buildLabel("Email or Phone Number"),
+                    _buildLabel("Email"),
                     TextField(
+                      controller: _emailController,
                       decoration: _inputDecoration(
-                        "Enter your email or phone number",
+                        "Enter your email",
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -69,6 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                     // Password Input
                     _buildLabel("Password"),
                     TextField(
+                      controller: _passwordController,
                       obscureText: !_isPasswordVisible,
                       decoration: _inputDecoration("Enter your password")
                           .copyWith(
@@ -103,13 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(builder: (context) => NavBar()),
-                            (route) => false,
-                          );
-                        },
+                        onPressed: _isLoading ? null : _signIn,
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               AppColors.mainColor, // Teal color from image
@@ -118,14 +162,16 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -170,7 +216,7 @@ class _LoginPageState extends State<LoginPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => RegisterPage(),
+                                builder: (context) => const RegisterPage(),
                               ),
                             );
                           },

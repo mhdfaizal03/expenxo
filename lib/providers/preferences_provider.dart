@@ -14,6 +14,14 @@ class PreferencesProvider extends ChangeNotifier {
     _loadPreferences();
   }
 
+  bool _generalNotifications = true;
+  bool _transactionAlerts = true;
+  bool _budgetReminders = false;
+
+  bool get generalNotifications => _generalNotifications;
+  bool get transactionAlerts => _transactionAlerts;
+  bool get budgetReminders => _budgetReminders;
+
   Future<void> _loadPreferences() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -21,6 +29,11 @@ class PreferencesProvider extends ChangeNotifier {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
       _currencySymbol = prefs.getString('currencySymbol') ?? '\$';
       _currencyCode = prefs.getString('currencyCode') ?? 'USD';
+
+      _generalNotifications = prefs.getBool('generalNotifications') ?? true;
+      _transactionAlerts = prefs.getBool('transactionAlerts') ?? true;
+      _budgetReminders = prefs.getBool('budgetReminders') ?? false;
+
       notifyListeners();
     } catch (e) {
       debugPrint("Error loading preferences: $e");
@@ -40,6 +53,27 @@ class PreferencesProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('currencySymbol', symbol);
     await prefs.setString('currencyCode', code);
+    notifyListeners();
+  }
+
+  Future<void> setGeneralNotifications(bool value) async {
+    _generalNotifications = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('generalNotifications', value);
+    notifyListeners();
+  }
+
+  Future<void> setTransactionAlerts(bool value) async {
+    _transactionAlerts = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('transactionAlerts', value);
+    notifyListeners();
+  }
+
+  Future<void> setBudgetReminders(bool value) async {
+    _budgetReminders = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('budgetReminders', value);
     notifyListeners();
   }
 }

@@ -1,6 +1,6 @@
-
 import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
+import 'package:expenxo/view/nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -52,7 +52,11 @@ class _RegisterPageState extends State<RegisterPage> {
         _nameController.text.trim(),
       );
       if (mounted) {
-        Navigator.pop(context); // Go back to login or close register page
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const NavBar()),
+          (route) => false,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -68,7 +72,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight: MediaQuery.of(context).size.height,
@@ -81,43 +85,61 @@ class _RegisterPageState extends State<RegisterPage> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Expenxo',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Create Your Account',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Join Expenxo and take control of your money.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                      fontSize: 15,
+                    ),
                   ),
                   const SizedBox(height: 20),
 
                   // Form Fields
-                  _buildFieldLabel("Full Name"),
-                  _buildTextField("John Doe", _nameController),
+                  _buildFieldLabel(context, "Full Name"),
+                  _buildTextField(context, "John Doe", _nameController),
 
                   const SizedBox(height: 16),
-                  _buildFieldLabel("Email Address"),
-                  _buildTextField("john.doe@example.com", _emailController),
+                  _buildFieldLabel(context, "Email Address"),
+                  _buildTextField(
+                    context,
+                    "john.doe@example.com",
+                    _emailController,
+                  ),
 
                   const SizedBox(height: 16),
-                  _buildFieldLabel("Password"),
+                  _buildFieldLabel(context, "Password"),
                   TextField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
-                    decoration: _inputDecoration("********").copyWith(
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
+                    decoration: _inputDecoration(context, "********").copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
                               ? Icons.visibility
                               : Icons.visibility_outlined,
-                          color: Colors.grey,
+                          color: Theme.of(context).iconTheme.color,
                           size: 20,
                         ),
                         onPressed: () => setState(
@@ -128,15 +150,19 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
 
                   const SizedBox(height: 16),
-                  _buildFieldLabel("Phone Number (Optional)"),
+                  _buildFieldLabel(context, "Phone Number (Optional)"),
                   TextField(
-                    decoration: _inputDecoration("+91 555-123-4567").copyWith(
-                      prefixIcon: const Icon(
-                        Icons.phone_outlined,
-                        size: 20,
-                        color: Colors.grey,
-                      ),
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
+                    decoration: _inputDecoration(context, "+91 555-123-4567")
+                        .copyWith(
+                          prefixIcon: Icon(
+                            Icons.phone_outlined,
+                            size: 20,
+                            color: Theme.of(context).iconTheme.color,
+                          ),
+                        ),
                   ),
 
                   const SizedBox(height: 16),
@@ -148,6 +174,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         width: 24,
                         child: Checkbox(
                           activeColor: AppColors.mainColor,
+                          side: BorderSide(
+                            color: Theme.of(context).dividerColor,
+                          ),
                           value: _agreedToTerms,
                           onChanged: (val) =>
                               setState(() => _agreedToTerms = val!),
@@ -161,7 +190,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         child: Text.rich(
                           TextSpan(
                             text: 'I agree to the ',
-                            style: TextStyle(fontSize: 13, color: Colors.grey),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.color,
+                            ),
                             children: [
                               TextSpan(
                                 text: 'Terms & Privacy Policy',
@@ -185,8 +219,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _signUp,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            AppColors.mainColor, // Lighter teal from image
+                        backgroundColor: AppColors.mainColor,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -206,34 +239,46 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
 
                   const SizedBox(height: 25),
-                  const Row(
+                  Row(
                     children: [
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10),
-                        child: Text("or", style: TextStyle(color: Colors.grey)),
+                      Expanded(
+                        child: Divider(color: Theme.of(context).dividerColor),
                       ),
-                      Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          "or",
+                          style: TextStyle(
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(color: Theme.of(context).dividerColor),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 25),
 
                   // Social Sign-Up
                   _socialButton(
+                    context,
                     "Sign up with Google",
                     Icons.account_circle_outlined,
                   ),
                   const SizedBox(height: 12),
-                  _socialButton("Sign up with Apple", Icons.apple),
+                  _socialButton(context, "Sign up with Apple", Icons.apple),
 
                   const SizedBox(height: 20),
                   // Already have an account
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Already have an account?",
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                        ),
                       ),
                       TextButton(
                         onPressed: () {
@@ -259,55 +304,74 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   // Helper UI methods
-  Widget _buildFieldLabel(String label) {
+  Widget _buildFieldLabel(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
         ),
       ),
     );
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(BuildContext context, String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+      hintStyle: TextStyle(color: Theme.of(context).hintColor, fontSize: 14),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      filled: true,
+      fillColor: Theme.of(context).cardColor,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(
+          color: Theme.of(context).dividerColor.withOpacity(0.2),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF00C9A7)),
+        borderSide: const BorderSide(color: AppColors.mainColor),
       ),
     );
   }
 
-  Widget _buildTextField(String hint, TextEditingController controller) {
+  Widget _buildTextField(
+    BuildContext context,
+    String hint,
+    TextEditingController controller,
+  ) {
     return TextField(
       controller: controller,
-      decoration: _inputDecoration(hint),
+      style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+      decoration: _inputDecoration(context, hint),
     );
   }
 
-  Widget _socialButton(String text, IconData icon) {
+  Widget _socialButton(BuildContext context, String text, IconData icon) {
     return SizedBox(
       width: double.infinity,
       height: 55,
       child: OutlinedButton.icon(
         onPressed: () {},
-        icon: Icon(icon, color: Colors.black, size: 22),
+        icon: Icon(icon, color: Theme.of(context).iconTheme.color, size: 22),
         label: Text(
           text,
-          style: const TextStyle(color: Colors.black, fontSize: 15),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            fontSize: 15,
+          ),
         ),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFE0E0E0)),
+          backgroundColor: Theme.of(context).cardColor,
+          side: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.2),
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

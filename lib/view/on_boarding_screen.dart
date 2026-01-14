@@ -1,7 +1,6 @@
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/auth/login_page.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class OnBoardingScreen extends StatefulWidget {
   const OnBoardingScreen({super.key});
@@ -35,18 +34,6 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
     },
   ];
 
-  Future<void> _completeOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('seenOnboarding', true);
-
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-      (route) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -65,7 +52,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () {
-                          _completeOnboarding();
+                          _pageController.jumpToPage(pageList.length - 1);
                         },
                         child: Text(
                           "Skip",
@@ -157,7 +144,14 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                       ),
                       onPressed: () {
                         if (_currentIndex == pageList.length - 1) {
-                          _completeOnboarding();
+                          // Navigate to Login
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LoginPage(),
+                            ),
+                            (route) => false,
+                          );
                         } else {
                           _pageController.nextPage(
                             duration: const Duration(milliseconds: 300),

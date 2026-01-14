@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:expenxo/services/notification_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expenxo/models/budget_model.dart';
@@ -25,6 +26,16 @@ class FirestoreService {
     } catch (e) {
       print("Error fetching user name: $e");
       return 'User';
+    }
+  }
+
+  Future<void> updateUserName(String name) async {
+    if (_userId == null) return;
+    try {
+      await _firestore.collection('users').doc(_userId).update({'name': name});
+    } catch (e) {
+      print("Error updating user name: $e");
+      rethrow;
     }
   }
 
@@ -242,6 +253,7 @@ class FirestoreService {
     }
     await batch.commit();
   }
+
   // --- Smart Notifications Logic ---
 
   Future<void> _checkSmartNotifications(TransactionModel newTransaction) async {
@@ -292,6 +304,9 @@ class FirestoreService {
     if (newTransaction.type == 'Expense') {
       final category = newTransaction.category;
 
+      final prefs = await SharedPreferences.getInstance();
+      final currencySymbol = prefs.getString('currencySymbol') ?? '\$';
+
       // Get budgets for this category
       final budgetsSnapshot = await _firestore
           .collection('users')
@@ -317,7 +332,7 @@ class FirestoreService {
           if (categorySpend > budget.amount) {
             final title = "Budget Exceeded: $category";
             final body =
-                "You've spent \$${categorySpend.toStringAsFixed(0)} on $category, which is over your budget of \$${budget.amount.toStringAsFixed(0)}.";
+                "You've spent $currencySymbol${categorySpend.toStringAsFixed(1)} on $category, which is over your budget of $currencySymbol${budget.amount.toStringAsFixed(1)}.";
 
             _notificationService.showLocalNotification(
               title: title,

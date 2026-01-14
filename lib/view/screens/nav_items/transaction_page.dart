@@ -496,7 +496,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            TextButton.icon(
+                            TextButton(
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -505,12 +505,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                   ),
                                 );
                               },
-                              icon: Icon(
-                                Icons.add_circle,
-                                size: 20,
-                                color: AppColors.mainColor,
-                              ),
-                              label: Text(
+
+                              child: Text(
                                 "Add Category",
                                 style: TextStyle(
                                   color: AppColors.mainColor,
@@ -523,6 +519,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                               GestureDetector(
                                 onTap: () => _selectDate(context),
                                 child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.mainColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),

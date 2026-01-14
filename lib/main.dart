@@ -5,9 +5,8 @@ import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/providers/ai_provider.dart';
 import 'package:expenxo/services/notification_service.dart';
-import 'package:expenxo/view/auth/on_boarding_screen.dart';
 import 'package:expenxo/view/auth/splash_screen.dart';
-import 'package:expenxo/view/nav_bar.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -140,32 +139,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 ),
               ),
             ),
-            home: const AuthWrapper(),
+            home: const SplashScreen(),
           );
         },
       ),
-    );
-  }
-}
-
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context);
-    return StreamBuilder(
-      stream: authService.authStateChanges,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.active) {
-          final user = snapshot.data;
-          if (user == null) {
-            return const OnBoardingScreen();
-          }
-          return const NavBar();
-        }
-        return const SplashScreen();
-      },
     );
   }
 }

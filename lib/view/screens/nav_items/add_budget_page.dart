@@ -2,6 +2,7 @@ import 'package:expenxo/models/budget_model.dart';
 import 'package:expenxo/models/category_model.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
+import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -75,10 +76,16 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
               decoration: _inputDecoration("").copyWith(
-                prefixIcon: Icon(
-                  Icons.attach_money,
-                  color: Theme.of(context).iconTheme.color,
-                  size: 28,
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Text(
+                    Provider.of<PreferencesProvider>(context).currencySymbol,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                  ),
                 ),
                 hintText: "0.00",
               ),

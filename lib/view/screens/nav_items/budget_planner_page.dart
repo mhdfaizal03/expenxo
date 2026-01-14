@@ -105,7 +105,7 @@ class BudgetPlannerPage extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                 Text(
+                                Text(
                                   'Budget Planner',
                                   style: TextStyle(
                                     color: Theme.of(
@@ -279,14 +279,14 @@ class BudgetPlannerPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-               Text(
+              Text(
                 "Spent",
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodySmall?.color,
                   fontSize: 12,
                 ),
               ),
-               Text(
+              Text(
                 "Remaining",
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodySmall?.color,
@@ -354,9 +354,11 @@ class BudgetPlannerPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.1),
+        ),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).shadowColor.withOpacity(0.05),
@@ -373,7 +375,7 @@ class BudgetPlannerPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Theme.of(context).dividerColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -383,7 +385,13 @@ class BudgetPlannerPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
               const Spacer(),
               Text(
                 "Target: $allocated",
@@ -398,7 +406,7 @@ class BudgetPlannerPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-               Text(
+              Text(
                 "Spent",
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodySmall?.color,
@@ -422,7 +430,7 @@ class BudgetPlannerPage extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress > 1 ? 1 : progress,
               minHeight: 6,
-              backgroundColor: const Color(0xFFE0F7F3),
+              backgroundColor: Theme.of(context).dividerColor.withOpacity(0.1),
               color: isOverBudget
                   ? const Color(0xFFF25C54)
                   : (color ?? AppColors.mainColor),

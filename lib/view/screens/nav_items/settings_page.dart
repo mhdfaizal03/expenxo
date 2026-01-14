@@ -1,6 +1,12 @@
 import 'package:currency_picker/currency_picker.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
+import 'package:expenxo/services/firestore_service.dart';
+import 'package:expenxo/view/auth/login_page.dart';
 import 'package:expenxo/view/screens/notification_page.dart';
+import 'package:expenxo/view/screens/settings/edit_profile_page.dart';
+import 'package:expenxo/view/screens/settings/help_support_page.dart';
+import 'package:expenxo/view/screens/settings/privacy_settings_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,11 +18,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  // Toggle states
-  bool _generalNotifications = true;
-  bool _transactionAlerts = true;
-  bool _budgetReminders = false;
-
   @override
   Widget build(BuildContext context) {
     return Consumer<PreferencesProvider>(
@@ -88,18 +89,17 @@ class _SettingsPageState extends State<SettingsPage> {
                             title: "General Notifications",
                             subtitle:
                                 "Receive updates about new features and promotions.",
-                            value: _generalNotifications,
+                            value: prefs.generalNotifications,
                             onChanged: (val) =>
-                                setState(() => _generalNotifications = val),
+                                prefs.setGeneralNotifications(val),
                           ),
                           _buildSwitchTile(
                             context,
                             icon: Icons.list_alt_outlined,
                             title: "Transaction Alerts",
                             subtitle: "Get notified for every transaction.",
-                            value: _transactionAlerts,
-                            onChanged: (val) =>
-                                setState(() => _transactionAlerts = val),
+                            value: prefs.transactionAlerts,
+                            onChanged: (val) => prefs.setTransactionAlerts(val),
                           ),
                           _buildSwitchTile(
                             context,
@@ -107,9 +107,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             title: "Budget Reminders",
                             subtitle:
                                 "Alerts for approaching or exceeded budgets.",
-                            value: _budgetReminders,
-                            onChanged: (val) =>
-                                setState(() => _budgetReminders = val),
+                            value: prefs.budgetReminders,
+                            onChanged: (val) => prefs.setBudgetReminders(val),
                           ),
                         ],
                       ),
@@ -153,17 +152,19 @@ class _SettingsPageState extends State<SettingsPage> {
                         children: [
                           _buildNavigationTile(
                             context,
-                            icon: Icons.cloud_outlined,
-                            title: "Data Backup & Sync",
-                            subtitle:
-                                "Securely back up your data to the cloud.",
-                          ),
-                          _buildNavigationTile(
-                            context,
                             icon: Icons.lock_outline,
                             title: "Privacy Settings",
                             subtitle:
                                 "Manage your data and privacy preferences.",
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PrivacySettingsPage(),
+                                ),
+                              );
+                            },
                           ),
                           _buildNavigationTile(
                             context,
@@ -172,6 +173,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             subtitle: "Sign out from your account.",
                             titleColor: Colors.redAccent,
                             iconColor: Colors.redAccent,
+                            onTap: () => _showLogoutDialog(context),
                           ),
                         ],
                       ),
@@ -185,20 +187,16 @@ class _SettingsPageState extends State<SettingsPage> {
                           _buildNavigationTile(
                             context,
                             icon: Icons.help_outline,
-                            title: "FAQ",
-                            subtitle: "Find answers to common questions.",
-                          ),
-                          _buildNavigationTile(
-                            context,
-                            icon: Icons.mail_outline,
-                            title: "Contact Support",
-                            subtitle: "Get in touch with our support team.",
-                          ),
-                          _buildNavigationTile(
-                            context,
-                            icon: Icons.chat_bubble_outline,
-                            title: "Send Feedback",
-                            subtitle: "Share your suggestions and ideas.",
+                            title: "FAQ & Support",
+                            subtitle: "Find answers and contact us.",
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const HelpSupportPage(),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -218,58 +216,116 @@ class _SettingsPageState extends State<SettingsPage> {
   // --- UI Component Helpers ---
 
   Widget _buildProfileHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-            child: Icon(
-              Icons.person,
-              size: 30,
-              color: Theme.of(context).primaryColor,
+    return FutureBuilder<String>(
+      future: Provider.of<FirestoreService>(
+        context,
+        listen: false,
+      ).getUserName(),
+      builder: (context, snapshot) {
+        final name = snapshot.data ?? 'User';
+        final email = FirebaseAuth.instance.currentUser?.email ?? 'No Email';
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const EditProfilePage()),
+            ).then((_) => setState(() {})); // Refresh on return
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withOpacity(0.1),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).shadowColor.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).primaryColor.withOpacity(0.1),
+                  child: Icon(
+                    Icons.person,
+                    size: 30,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    Text(
+                      email,
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.edit,
+                  size: 20,
+                  color: Theme.of(context).iconTheme.color?.withOpacity(0.5),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Alex Johnson",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-              Text(
-                "alex.j@example.com",
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodySmall?.color,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+        );
+      },
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
+          "Logout?",
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+        ),
+        content: Text(
+          "Are you sure you want to log out?",
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(ctx),
           ),
-          const Spacer(),
-          Icon(
-            Icons.chevron_right,
-            color: Theme.of(context).iconTheme.color?.withOpacity(0.3),
+          TextButton(
+            child: const Text("Logout", style: TextStyle(color: Colors.red)),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  (route) => false,
+                );
+              }
+            },
           ),
         ],
       ),

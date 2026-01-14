@@ -1,4 +1,3 @@
-
 import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/auth/register_page.dart';
@@ -42,15 +41,15 @@ class _LoginPageState extends State<LoginPage> {
         _passwordController.text.trim(),
       );
 
-
-      if(authService.currentUser != null){
-        if(mounted){
-          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) =>  NavBar()), (route) => false);
+      if (authService.currentUser != null) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => NavBar()),
+            (route) => false,
+          );
         }
       }
-      // Navigation is handled by AuthWrapper loop in main.dart
-      // But we can pop if we pushed this page. 
-      // Since OnBoarding -> Login, AuthWrapper will replace OnBoarding with NavBar implicitly.
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -80,28 +79,32 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Logo/Brand Name
-                    const Text(
+                    Text(
                       'Expenxo',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 20),
                     // Header
-                    const Text(
+                    Text(
                       'Welcome Back!',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Sign in to continue managing your finances.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 32),
 
@@ -109,9 +112,10 @@ class _LoginPageState extends State<LoginPage> {
                     _buildLabel("Email"),
                     TextField(
                       controller: _emailController,
-                      decoration: _inputDecoration(
-                        "Enter your email",
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
+                      decoration: _inputDecoration(context, "Enter your email"),
                     ),
                     const SizedBox(height: 20),
 
@@ -120,14 +124,21 @@ class _LoginPageState extends State<LoginPage> {
                     TextField(
                       controller: _passwordController,
                       obscureText: !_isPasswordVisible,
-                      decoration: _inputDecoration("Enter your password")
-                          .copyWith(
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                      decoration:
+                          _inputDecoration(
+                            context,
+                            "Enter your password",
+                          ).copyWith(
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible
                                     ? Icons.visibility
                                     : Icons.visibility_off_outlined,
                                 size: 20,
+                                color: Theme.of(context).iconTheme.color,
                               ),
                               onPressed: () => setState(
                                 () => _isPasswordVisible = !_isPasswordVisible,
@@ -155,15 +166,16 @@ class _LoginPageState extends State<LoginPage> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _signIn,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              AppColors.mainColor, // Teal color from image
+                          backgroundColor: AppColors.mainColor,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
                             : const Text(
                                 'Sign In',
                                 style: TextStyle(
@@ -177,29 +189,39 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 30),
                     // Divider
-                    const Row(
+                    Row(
                       children: [
-                        Expanded(child: Divider()),
+                        Expanded(
+                          child: Divider(color: Theme.of(context).dividerColor),
+                        ),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
                             "OR",
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.color,
+                            ),
                           ),
                         ),
-                        Expanded(child: Divider()),
+                        Expanded(
+                          child: Divider(color: Theme.of(context).dividerColor),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 30),
 
                     // Social Logins
                     _socialButton(
+                      context,
                       "Continue with Google",
                       "assets/google_logo.png",
                       Icons.api,
-                    ), // Replace with actual asset
+                    ),
                     const SizedBox(height: 12),
                     _socialButton(
+                      context,
                       "Continue with Apple",
                       "assets/apple_logo.png",
                       Icons.apple,
@@ -210,7 +232,14 @@ class _LoginPageState extends State<LoginPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Don't have an account?"),
+                        Text(
+                          "Don't have an account?",
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
+                          ),
+                        ),
                         TextButton(
                           onPressed: () {
                             Navigator.push(
@@ -247,35 +276,42 @@ class _LoginPageState extends State<LoginPage> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w500,
-          color: Colors.black54,
+          color: Theme.of(context).textTheme.bodyMedium?.color,
         ),
       ),
     );
   }
 
   // Helper: Common Input Decoration
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(BuildContext context, String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+      hintStyle: TextStyle(color: Theme.of(context).hintColor, fontSize: 14),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: Theme.of(context).cardColor,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(
+          color: Theme.of(context).dividerColor.withOpacity(0.2),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF00C9A7)),
+        borderSide: const BorderSide(color: AppColors.mainColor),
       ),
     );
   }
 
   // Helper: Social Buttons
-  Widget _socialButton(String text, String assetPath, IconData fallbackIcon) {
+  Widget _socialButton(
+    BuildContext context,
+    String text,
+    String assetPath,
+    IconData fallbackIcon,
+  ) {
     return SizedBox(
       width: double.infinity,
       height: 55,
@@ -283,16 +319,21 @@ class _LoginPageState extends State<LoginPage> {
         onPressed: () {},
         icon: Icon(
           fallbackIcon,
-          color: Colors.black,
+          color: Theme.of(context).iconTheme.color,
           size: 24,
-        ), // Swap for Image.asset when ready
+        ),
         label: Text(
           text,
-          style: const TextStyle(color: Colors.black, fontSize: 15),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            fontSize: 15,
+          ),
         ),
         style: OutlinedButton.styleFrom(
-          backgroundColor: const Color(0xFFF5F5F5),
-          side: BorderSide.none,
+          backgroundColor: Theme.of(context).cardColor,
+          side: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.2),
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

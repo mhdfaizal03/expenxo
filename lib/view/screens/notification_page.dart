@@ -105,22 +105,22 @@ class NotificationPage extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          firestoreService.addNotification(
-            NotificationModel(
-              id: '',
-              title: "Test Notification",
-              body:
-                  "This is a test alert generated at ${DateFormat('h:mm:ss a').format(DateTime.now())}",
-              timestamp: DateTime.now(),
-              type: 'alert',
-            ),
-          );
-        },
-        backgroundColor: AppColors.mainColor,
-        child: const Icon(Icons.add_alert, color: Colors.white),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () {
+      //     firestoreService.addNotification(
+      //       NotificationModel(
+      //         id: '',
+      //         title: "Test Notification",
+      //         body:
+      //             "This is a test alert generated at ${DateFormat('h:mm:ss a').format(DateTime.now())}",
+      //         timestamp: DateTime.now(),
+      //         type: 'alert',
+      //       ),
+      //     );
+      //   },
+      //   backgroundColor: AppColors.mainColor,
+      //   child: const Icon(Icons.add_alert, color: Colors.white),
+      // ),
     );
   }
 

@@ -7,6 +7,7 @@ import 'package:expenxo/view/screens/settings/edit_profile_page.dart';
 import 'package:expenxo/view/screens/settings/help_support_page.dart';
 import 'package:expenxo/view/screens/settings/privacy_settings_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -436,7 +437,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
-          Switch(
+          CupertinoSwitch(
             value: value,
             onChanged: onChanged,
             activeColor: const Color(0xFF00C9A7),

@@ -6,6 +6,10 @@ import 'package:expenxo/models/category_model.dart';
 import 'package:expenxo/models/notification_model.dart';
 import 'package:expenxo/models/transaction_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -401,6 +405,71 @@ class FirestoreService {
       await prefs.remove('lastSmsSyncTime');
     } catch (e) {
       print("Error deleting all data: $e");
+      rethrow;
+    }
+  }
+
+  // --- CSV Export ---
+
+  Future<void> exportTransactionsToCsv() async {
+    try {
+      final transactions = await getTransactionsOnce();
+      if (transactions.isEmpty) {
+        throw Exception("No transactions to export.");
+      }
+
+      List<List<String>> csvData = [
+        [
+          "Date",
+          "Title",
+          "Category",
+          "Type",
+          "Amount",
+          "Description",
+          "Is SMS",
+        ],
+        ...transactions.map((t) => t.toCsvRow()),
+      ];
+
+      String csvString = const ListToCsvConverter().convert(csvData);
+
+      final directory = await getTemporaryDirectory();
+      final path =
+          "${directory.path}/expenxo_export_${DateTime.now().millisecondsSinceEpoch}.csv";
+      final file = File(path);
+      await file.writeAsString(csvString);
+
+      await Share.shareXFiles([
+        XFile(path),
+      ], text: 'My Expenxo Transaction Export');
+    } catch (e) {
+      print("Error exporting CSV: $e");
+      rethrow;
+    }
+  }
+
+  // --- Sync & Backup Management ---
+
+  Future<String?> getLastSyncTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('lastSyncTime');
+  }
+
+  Future<void> updateLastSyncTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lastSyncTime', DateTime.now().toIso8601String());
+  }
+
+  Future<void> manualSync() async {
+    if (_userId == null) return;
+    try {
+      // Logic for manual sync: essentially refreshing the stream or specific data if needed.
+      // Since Firestore is real-time, "sync" often means ensuring local persistence is up to date
+      // or manually triggering a fetch to update the "Last Sync" timestamp.
+      await getTransactionsOnce();
+      await updateLastSyncTime();
+    } catch (e) {
+      print("Error during manual sync: $e");
       rethrow;
     }
   }

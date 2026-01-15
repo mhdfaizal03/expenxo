@@ -1,8 +1,47 @@
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
+
+  Future<void> _launchEmail() async {
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'support@expenxo.com',
+      query: encodeQueryParameters(<String, String>{
+        'subject': 'Expenxo Support Request',
+      }),
+    );
+
+    if (await canLaunchUrl(emailLaunchUri)) {
+      await launchUrl(emailLaunchUri);
+    }
+  }
+
+  Future<void> _launchBugReport() async {
+    final Uri bugLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'support@expenxo.com',
+      query: encodeQueryParameters(<String, String>{
+        'subject': 'Bug Report: Expenxo',
+        'body': 'Please describe the bug and steps to reproduce:\n\n',
+      }),
+    );
+
+    if (await canLaunchUrl(bugLaunchUri)) {
+      await launchUrl(bugLaunchUri);
+    }
+  }
+
+  String? encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map(
+          (MapEntry<String, String> e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}',
+        )
+        .join('&');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +107,7 @@ class HelpSupportPage extends StatelessWidget {
             Icons.email_outlined,
             "Email Support",
             "support@expenxo.com",
-            () {},
+            _launchEmail,
           ),
           const SizedBox(height: 12),
           _buildContactButton(
@@ -76,7 +115,7 @@ class HelpSupportPage extends StatelessWidget {
             Icons.bug_report_outlined,
             "Report a Bug",
             "Let us know if something's broken",
-            () {},
+            _launchBugReport,
           ),
         ],
       ),
@@ -120,11 +159,7 @@ class HelpSupportPage extends StatelessWidget {
     VoidCallback onTap,
   ) {
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Support features coming soon!")),
-        );
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

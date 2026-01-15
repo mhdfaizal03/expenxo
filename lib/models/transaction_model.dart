@@ -50,4 +50,16 @@ class TransactionModel {
       'isSms': isSms,
     };
   }
+
+  List<String> toCsvRow() {
+    return [
+      date.toIso8601String(),
+      title,
+      category,
+      type,
+      amount.toString(),
+      description,
+      isSms ? "Yes" : "No",
+    ];
+  }
 }

@@ -142,11 +142,23 @@ class BudgetPlannerPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 24),
 
-                            const Text(
+                            Text(
                               'Category Budgets',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.color,
+                              ),
+                            ),
+                            Text(
+                              '(Press and hold to delete budgets)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                fontStyle: FontStyle.italic,
+                                color: Colors.grey.withOpacity(0.8),
                               ),
                             ),
                             const SizedBox(height: 16),

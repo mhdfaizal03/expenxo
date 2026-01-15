@@ -1,10 +1,84 @@
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:expenxo/services/firestore_service.dart';
 
-class PrivacySettingsPage extends StatelessWidget {
+class PrivacySettingsPage extends StatefulWidget {
   const PrivacySettingsPage({super.key});
+
+  @override
+  State<PrivacySettingsPage> createState() => _PrivacySettingsPageState();
+}
+
+class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
+  String _lastSyncStr = "Never";
+  bool _isSyncing = false;
+  bool _isExporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSyncStatus();
+  }
+
+  Future<void> _loadSyncStatus() async {
+    final firestoreService = Provider.of<FirestoreService>(
+      context,
+      listen: false,
+    );
+    final lastSync = await firestoreService.getLastSyncTime();
+    if (lastSync != null) {
+      final dateTime = DateTime.parse(lastSync);
+      setState(() {
+        _lastSyncStr = DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
+      });
+    }
+  }
+
+  Future<void> _handleManualSync() async {
+    setState(() => _isSyncing = true);
+    try {
+      final firestoreService = Provider.of<FirestoreService>(
+        context,
+        listen: false,
+      );
+      await firestoreService.manualSync();
+      await _loadSyncStatus();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Data synced successfully!")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Sync failed: $e")));
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
+    }
+  }
+
+  Future<void> _handleExport() async {
+    setState(() => _isExporting = true);
+    try {
+      final firestoreService = Provider.of<FirestoreService>(
+        context,
+        listen: false,
+      );
+      await firestoreService.exportTransactionsToCsv();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Export failed: $e")));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,21 +105,50 @@ class PrivacySettingsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _buildInfoTile(
-            context,
-            "Data Sync",
-            "Your data is synced securely with Firebase Cloud.",
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              "Data Sync",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
+            subtitle: Text(
+              "Last Synced: $_lastSyncStr\nYour data is synced securely with Firebase Cloud.",
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+                height: 1.4,
+              ),
+            ),
+            trailing: _isSyncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.sync, color: AppColors.mainColor),
+                    onPressed: _handleManualSync,
+                  ),
           ),
           const Divider(),
           _buildInfoTile(
             context,
             "Local Backup",
-            "All transactions are cached locally on your device.",
+            "All transactions are cached locally on your device for offline access.",
           ),
           const Divider(),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.download, color: AppColors.mainColor),
+            leading: _isExporting
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download, color: AppColors.mainColor),
             title: Text(
               "Export Data (CSV)",
               style: TextStyle(
@@ -58,11 +161,7 @@ class PrivacySettingsPage extends StatelessWidget {
                 color: Theme.of(context).textTheme.bodySmall?.color,
               ),
             ),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Export feature coming soon!")),
-              );
-            },
+            onTap: _isExporting ? null : _handleExport,
           ),
           const SizedBox(height: 40),
           SizedBox(
@@ -121,6 +220,8 @@ class PrivacySettingsPage extends StatelessWidget {
                                 backgroundColor: Colors.red,
                               ),
                             );
+
+                            _loadSyncStatus(); // Refresh status
                           } catch (e) {
                             Navigator.pop(context); // Hide loading
                             ScaffoldMessenger.of(context).showSnackBar(

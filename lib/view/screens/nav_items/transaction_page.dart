@@ -74,7 +74,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       final customCat = customCategories.firstWhere(
         (c) => c.name == categoryName,
       );
-      return IconData(customCat.iconCode, fontFamily: 'MaterialIcons');
+      return IconHelper.getIconFromCode(customCat.iconCode);
     } catch (e) {
       // Not found in custom
     }
@@ -100,6 +100,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   // Date Selection Helpers
   Future<void> _selectDate(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
@@ -108,7 +109,22 @@ class _TransactionsPageState extends State<TransactionsPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                    surface: AppColors.cardDark,
+                  )
+                : ColorScheme.light(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+            dialogBackgroundColor: isDark ? AppColors.cardDark : Colors.white,
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.mainColor),
+            ),
           ),
           child: child!,
         );
@@ -122,6 +138,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -130,7 +147,32 @@ class _TransactionsPageState extends State<TransactionsPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+            scaffoldBackgroundColor: isDark
+                ? AppColors.scaffoldDark
+                : Colors.white,
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                    surface: AppColors.cardDark,
+                  )
+                : ColorScheme.light(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+            dialogBackgroundColor: isDark ? AppColors.cardDark : Colors.white,
+            appBarTheme: AppBarTheme(
+              backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+              iconTheme: IconThemeData(
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              elevation: 0,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.mainColor),
+            ),
           ),
           child: child!,
         );
@@ -742,16 +784,47 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           );
                         }
 
-                        return Column(
-                          children: filteredTransactions.map((transaction) {
-                            return _transactionItem(
-                              context,
-                              transaction,
-                              currencyFormat,
-                              dateFormat,
-                              customCategories,
-                            );
-                          }).toList(),
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            if (constraints.maxWidth >= 900) {
+                              // Desktop Grid Layout
+                              return Wrap(
+                                spacing: 20,
+                                runSpacing: 20,
+                                children: filteredTransactions.map((
+                                  transaction,
+                                ) {
+                                  return SizedBox(
+                                    width:
+                                        (constraints.maxWidth - 40) /
+                                        2, // 2 columns
+                                    child: _transactionItem(
+                                      context,
+                                      transaction,
+                                      currencyFormat,
+                                      dateFormat,
+                                      customCategories,
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            } else {
+                              // Mobile List Layout
+                              return Column(
+                                children: filteredTransactions.map((
+                                  transaction,
+                                ) {
+                                  return _transactionItem(
+                                    context,
+                                    transaction,
+                                    currencyFormat,
+                                    dateFormat,
+                                    customCategories,
+                                  );
+                                }).toList(),
+                              );
+                            }
+                          },
                         );
                       },
                     );

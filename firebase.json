@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"expenxo-ca8b4","appId":"1:38822547498:android:a7c57687a4ef60e2637353","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"expenxo-ca8b4","configurations":{"android":"1:38822547498:android:a7c57687a4ef60e2637353","ios":"1:38822547498:ios:76881f4ff69b01c0637353","macos":"1:38822547498:ios:76881f4ff69b01c0637353","web":"1:38822547498:web:d0a3cd98887f5313637353","windows":"1:38822547498:web:3edf098585db8d1f637353"}}}}}}
+{
+    "hosting": {
+        "public": "build/web",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "**",
+                "destination": "/index.html"
+            }
+        ]
+    },
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "expenxo-ca8b4",
+                    "appId": "1:38822547498:android:a7c57687a4ef60e2637353",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "expenxo-ca8b4",
+                    "configurations": {
+                        "android": "1:38822547498:android:a7c57687a4ef60e2637353",
+                        "ios": "1:38822547498:ios:76881f4ff69b01c0637353",
+                        "macos": "1:38822547498:ios:76881f4ff69b01c0637353",
+                        "web": "1:38822547498:web:d0a3cd98887f5313637353",
+                        "windows": "1:38822547498:web:3edf098585db8d1f637353"
+                    }
+                }
+            }
+        }
+    }
+}

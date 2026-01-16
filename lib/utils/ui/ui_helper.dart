@@ -1,6 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 
+class IconHelper {
+  static final List<IconData> _supportedIcons = [
+    Icons.restaurant,
+    Icons.directions_car,
+    Icons.shopping_bag,
+    Icons.home,
+    Icons.movie,
+    Icons.medical_services,
+    Icons.school,
+    Icons.fitness_center,
+    Icons.pets,
+    Icons.work,
+    Icons.flight,
+    Icons.local_cafe,
+    Icons.sports_esports,
+    Icons.fastfood,
+    Icons.local_grocery_store,
+    // Add defaults just in case
+    Icons.category,
+    Icons.receipt_long,
+  ];
+
+  static IconData getIconFromCode(int codePoint) {
+    try {
+      return _supportedIcons.firstWhere(
+        (icon) => icon.codePoint == codePoint,
+        orElse: () => Icons.category, // Default fallback
+      );
+    } catch (e) {
+      return Icons.category;
+    }
+  }
+}
+
 class DialogUtils {
   /// Shows a generic premium dialog with scale/fade animation
   static Future<T?> showPremiumDialog<T>({

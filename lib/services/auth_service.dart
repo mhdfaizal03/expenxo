@@ -13,7 +13,12 @@ class AuthService extends ChangeNotifier {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   // Sign Up
-  Future<UserModel?> signUp(String email, String password, String name) async {
+  Future<UserModel?> signUp(
+    String email,
+    String password,
+    String name,
+    String phoneNumber,
+  ) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -22,7 +27,12 @@ class AuthService extends ChangeNotifier {
       User? user = result.user;
 
       if (user != null) {
-        UserModel newUser = UserModel(uid: user.uid, email: email, name: name);
+        UserModel newUser = UserModel(
+          uid: user.uid,
+          email: email,
+          name: name,
+          phoneNumber: phoneNumber,
+        );
 
         // Save user to Firestore
         await _firestore.collection('users').doc(user.uid).set(newUser.toMap());
@@ -59,7 +69,15 @@ class AuthService extends ChangeNotifier {
   // Google Sign In
   Future<User?> signInWithGoogle() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      // For Web, explicitly passing clientId can be helpful if meta tag issue persists,
+      // though typically meta tag is preferred. We do both for robustness given the user's error.
+      // NOTE: For other platforms, we let GoogleServices-Info.plist / google-services.json handle it (clientId null).
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: kIsWeb
+            ? '38822547498-sq407jchg9suk3pq2spmfpgjvk1t3jpc.apps.googleusercontent.com'
+            : null,
+      );
+
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser != null) {

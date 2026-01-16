@@ -1,4 +1,5 @@
 import 'package:expenxo/models/transaction_model.dart';
+
 import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
@@ -35,6 +36,7 @@ class _HomePageState extends State<HomePage> {
 
   // Date Selection Helpers
   Future<void> _selectDate(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
@@ -43,7 +45,22 @@ class _HomePageState extends State<HomePage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                    surface: AppColors.cardDark,
+                  )
+                : ColorScheme.light(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+            dialogBackgroundColor: isDark ? AppColors.cardDark : Colors.white,
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.mainColor),
+            ),
           ),
           child: child!,
         );
@@ -57,6 +74,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -65,7 +83,32 @@ class _HomePageState extends State<HomePage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+            scaffoldBackgroundColor: isDark
+                ? AppColors.scaffoldDark
+                : Colors.white,
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                    surface: AppColors.cardDark,
+                  )
+                : ColorScheme.light(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+            dialogBackgroundColor: isDark ? AppColors.cardDark : Colors.white,
+            appBarTheme: AppBarTheme(
+              backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+              iconTheme: IconThemeData(
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              elevation: 0,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.mainColor),
+            ),
           ),
           child: child!,
         );
@@ -185,8 +228,7 @@ class _HomePageState extends State<HomePage> {
           decimalDigits: 0,
         );
 
-        // Find Latest Transactions (Global Latest for sync, but showing filtered list's latest might be more intuitive)
-        // Let's show filtered latest as it feels more responsive to the filter.
+        // Find Latest Transactions
         transactions.sort((a, b) => b.date.compareTo(a.date));
         TransactionModel? lastIncome;
         TransactionModel? lastExpense;
@@ -200,422 +242,640 @@ class _HomePageState extends State<HomePage> {
           if (lastIncome != null && lastExpense != null) break;
         }
 
-        return SingleChildScrollView(
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 15,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Check if Desktop (> 900px)
+            if (constraints.maxWidth >= 900) {
+              return _buildDesktopLayout(
+                context,
+                firestoreService,
+                currentBalance,
+                totalIncome,
+                totalExpense,
+                currencyFormat,
+                transactions, // Pass full list for desktop side panel
+                lastIncome,
+                lastExpense,
+              );
+            } else {
+              return _buildMobileLayout(
+                context,
+                firestoreService,
+                currentBalance,
+                totalIncome,
+                totalExpense,
+                currencyFormat,
+                lastIncome,
+                lastExpense,
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileLayout(
+    BuildContext context,
+    FirestoreService firestoreService,
+    double currentBalance,
+    double totalIncome,
+    double totalExpense,
+    NumberFormat currencyFormat,
+    TransactionModel? lastIncome,
+    TransactionModel? lastExpense,
+  ) {
+    return SingleChildScrollView(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15.0),
+              child: Flex(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                direction: Axis.vertical,
+                children: [
+                  _buildGreetingAndDateFilter(context, firestoreService),
+                  const SizedBox(height: 10),
+                  // Filter Dropdown
+                  _buildFilterDropdown(context),
+                  const SizedBox(height: 10),
+                  // Current Balance Card
+                  _buildBalanceCard(currentBalance, currencyFormat),
+                  const SizedBox(height: 24),
+                  // Monthly Overview Card
+                  _buildOverviewCard(
+                    context,
+                    totalIncome,
+                    totalExpense,
+                    currencyFormat,
                   ),
-                  child: Container(
-                    height: 40,
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Expenxo',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).textTheme.bodyLarge?.color,
-                              fontSize: 23,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.notifications_none,
-                              color: Theme.of(context).iconTheme.color,
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const NotificationPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
+                  const SizedBox(height: 20),
+                  // Action Buttons
+                  _buildActionButtons(context),
+                  const SizedBox(height: 32),
+                  // Latest Transactions Section
+                  _buildRecentActivityHeader(),
+                  const SizedBox(height: 16),
+                  _buildRecentActivityContent(
+                    context,
+                    lastIncome,
+                    lastExpense,
+                    currencyFormat,
                   ),
+                  const SizedBox(height: 15),
+                  // AI Insights
+                  _buildAIInsights(context),
+                ],
+              ),
+            ),
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    FirestoreService firestoreService,
+    double currentBalance,
+    double totalIncome,
+    double totalExpense,
+    NumberFormat currencyFormat,
+    List<TransactionModel> allTransactions,
+    TransactionModel? lastIncome,
+    TransactionModel? lastExpense,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _buildGreetingAndDateFilter(context, firestoreService),
+              ),
+              const SizedBox(width: 24),
+              SizedBox(width: 200, child: _buildFilterDropdown(context)),
+              const SizedBox(width: 24),
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_none,
+                  color: Theme.of(context).iconTheme.color,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                  child: Flex(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column (Balance, Actions, Overview)
+              Expanded(
+                flex: 3,
+                child: Column(
+                  children: [
+                    _buildBalanceCard(currentBalance, currencyFormat),
+                    const SizedBox(height: 24),
+                    _buildActionButtons(context),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildOverviewCard(
+                            context,
+                            totalIncome,
+                            totalExpense,
+                            currencyFormat,
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(child: _buildAIInsights(context)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 24),
+              // Right Column (Activity List)
+              Expanded(
+                flex: 2,
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    direction: Axis.vertical,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Use FutureBuilder to fetch user name from Firestore
-                          FutureBuilder<String>(
-                            future: firestoreService.getUserName(),
-                            builder: (context, userSnapshot) {
-                              final displayName =
-                                  userSnapshot.data?.split(' ').first ?? '....';
-                              return Text(
-                                'Hello! $displayName...',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.bodyLarge?.color,
-                                ),
-                              );
-                            },
-                          ),
-
-                          if (_dateFilter == 'By Date' && _selectedDate != null)
-                            GestureDetector(
-                              onTap: () => _selectDate(context),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.mainColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  DateFormat('MMM dd').format(_selectedDate!),
-                                  style: TextStyle(
-                                    color: AppColors.mainColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else if (_dateFilter == 'Custom Range' &&
-                              _selectedRange != null)
-                            GestureDetector(
-                              onTap: () => _selectDateRange(context),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.mainColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  "${DateFormat('MMM dd').format(_selectedRange!.start)} - ${DateFormat('MMM dd').format(_selectedRange!.end)}",
-                                  style: TextStyle(
-                                    color: AppColors.mainColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Filter Dropdown
-                      Container(
-                        height: 45,
-                        width: double.infinity,
-                        child: PremiumDropdown<String>(
-                          value: _dateFilter,
-                          icon: Icons.calendar_today_rounded,
-                          items: _dateOptions.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(
-                                value,
-                                style: TextStyle(
-                                  fontWeight: _dateFilter == value
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: _dateFilter == value
-                                      ? AppColors.mainColor
-                                      : Theme.of(
-                                          context,
-                                        ).textTheme.bodyLarge?.color,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (newValue) async {
-                            if (newValue != null) {
-                              setState(() => _dateFilter = newValue);
-                              if (newValue == 'By Date') {
-                                await _selectDate(context);
-                              } else if (newValue == 'Custom Range') {
-                                await _selectDateRange(context);
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Current Balance Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF68B96E), Color(0xFFB8AA6E)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Balance - $_dateFilter',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              currencyFormat.format(currentBalance),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Available for this period',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Monthly Overview Card
-                      _buildSectionCard(
-                        context: context,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$_dateFilter Overview',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildOverviewRow(
-                              context,
-                              Icons.radio_button_checked,
-                              'Income',
-                              currencyFormat.format(totalIncome),
-                              Theme.of(context).textTheme.bodyLarge?.color ??
-                                  Colors.black,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildOverviewRow(
-                              context,
-                              Icons.remove_circle_outline,
-                              'Expenses',
-                              currencyFormat.format(totalExpense),
-                              Colors.redAccent,
-                            ),
-                            const SizedBox(height: 16),
-                            LinearProgressIndicator(
-                              value: totalIncome > 0
-                                  ? (totalExpense / totalIncome).clamp(0.0, 1.0)
-                                  : 0,
-                              backgroundColor: const Color(0xFFE0F7F3),
-                              color: const Color(0xFF00C9A7),
-                              minHeight: 8,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              totalIncome > 0
-                                  ? "You've spent ${(totalExpense / totalIncome * 100).toStringAsFixed(0)}% of your income."
-                                  : "No income for this period.",
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Action Buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildActionButton(
-                              label: 'Add Expense',
-                              color: const Color(0xFFF25C54),
-                              icon: Icons.remove_circle_outline,
-                              onPress: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AddExpensePage(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildActionButton(
-                              onPress: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const AddIncomePage(),
-                                  ),
-                                );
-                              },
-                              label: 'Add Income',
-                              color: AppColors.mainColor,
-                              icon: Icons.add_circle_outline,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Latest Transactions Section
-                      Text(
-                        'Recent Activity',
-                        style: const TextStyle(
+                      const Text(
+                        'Recent Transactions',
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      if (lastExpense == null && lastIncome == null)
-                        const Text(
-                          "No transactions for this period",
-                          style: TextStyle(color: Colors.grey),
+                      const SizedBox(height: 20),
+                      if (allTransactions.isEmpty)
+                        const Center(
+                          child: Text(
+                            "No transactions found",
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         )
                       else
-                        SizedBox(
-                          height: 180, // Constrained height for cards
-                          child: Row(
-                            children: [
-                              if (lastExpense != null)
-                                Expanded(
-                                  child: _buildCategoryCard(
+                        ...allTransactions
+                            .take(8)
+                            .map(
+                              (t) => Column(
+                                children: [
+                                  _buildDesktopTransactionItem(
                                     context,
-                                    lastExpense.title.isNotEmpty
-                                        ? lastExpense.title
-                                        : lastExpense.category,
-                                    currencyFormat.format(lastExpense.amount),
-                                    Icons.money_off,
-                                    const Color(0xFFF25C54),
-                                    "Latest Expense",
+                                    t,
+                                    currencyFormat,
                                   ),
-                                ),
-                              if (lastExpense != null && lastIncome != null)
-                                const SizedBox(width: 16),
-                              if (lastIncome != null)
-                                Expanded(
-                                  child: _buildCategoryCard(
-                                    context,
-                                    lastIncome.title.isNotEmpty
-                                        ? lastIncome.title
-                                        : lastIncome.category,
-                                    currencyFormat.format(lastIncome.amount),
-                                    Icons.attach_money,
-                                    AppColors.mainColor,
-                                    "Latest Income",
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      const SizedBox(height: 15),
-
-                      // AI Insights (Static for now, could be dynamic logic)
-                      _buildSectionCard(
-                        context: context,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.auto_awesome,
-                                  size: 18,
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.bodyLarge?.color,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'AI Insights',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Spending tracked via Firebase!',
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodyLarge?.color,
-                                fontSize: 14,
-                                height: 1.4,
+                                  const Divider(height: 24, thickness: 0.5),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: () {},
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                              ),
-                              child: Text(
-                                'View Details & Take Action',
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.bodyLarge?.color,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                            )
+                            .toList(),
                     ],
                   ),
                 ),
-                const SizedBox(height: 100),
-              ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Extracted Component Builders to keep code clean and reusable
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15),
+      child: Container(
+        height: 40,
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Expenxo',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  fontSize: 23,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_none,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreetingAndDateFilter(
+    BuildContext context,
+    FirestoreService firestoreService,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        FutureBuilder<String>(
+          future: firestoreService.getUserName(),
+          builder: (context, userSnapshot) {
+            final displayName = userSnapshot.data?.split(' ').first ?? '....';
+            return Text(
+              'Hello! $displayName...',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            );
+          },
+        ),
+
+        if (_dateFilter == 'By Date' && _selectedDate != null)
+          GestureDetector(
+            onTap: () => _selectDate(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.mainColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                DateFormat('MMM dd').format(_selectedDate!),
+                style: TextStyle(
+                  color: AppColors.mainColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          )
+        else if (_dateFilter == 'Custom Range' && _selectedRange != null)
+          GestureDetector(
+            onTap: () => _selectDateRange(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.mainColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "${DateFormat('MMM dd').format(_selectedRange!.start)} - ${DateFormat('MMM dd').format(_selectedRange!.end)}",
+                style: TextStyle(
+                  color: AppColors.mainColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ),
           ),
-        );
-      },
+      ],
+    );
+  }
+
+  Widget _buildFilterDropdown(BuildContext context) {
+    return Container(
+      height: 45,
+      width: double.infinity,
+      child: PremiumDropdown<String>(
+        value: _dateFilter,
+        icon: Icons.calendar_today_rounded,
+        items: _dateOptions.map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: _dateFilter == value
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                color: _dateFilter == value
+                    ? AppColors.mainColor
+                    : Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+            ),
+          );
+        }).toList(),
+        onChanged: (newValue) async {
+          if (newValue != null) {
+            setState(() => _dateFilter = newValue);
+            if (newValue == 'By Date') {
+              await _selectDate(context);
+            } else if (newValue == 'Custom Range') {
+              await _selectDateRange(context);
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard(double currentBalance, NumberFormat currencyFormat) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF68B96E), Color(0xFFB8AA6E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Balance - $_dateFilter',
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            currencyFormat.format(currentBalance),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Available for this period',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverviewCard(
+    BuildContext context,
+    double totalIncome,
+    double totalExpense,
+    NumberFormat currencyFormat,
+  ) {
+    return _buildSectionCard(
+      context: context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$_dateFilter Overview',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          _buildOverviewRow(
+            context,
+            Icons.radio_button_checked,
+            'Income',
+            currencyFormat.format(totalIncome),
+            Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black,
+          ),
+          const SizedBox(height: 12),
+          _buildOverviewRow(
+            context,
+            Icons.remove_circle_outline,
+            'Expenses',
+            currencyFormat.format(totalExpense),
+            Colors.redAccent,
+          ),
+          const SizedBox(height: 16),
+          LinearProgressIndicator(
+            value: totalIncome > 0
+                ? (totalExpense / totalIncome).clamp(0.0, 1.0)
+                : 0,
+            backgroundColor: const Color(0xFFE0F7F3),
+            color: const Color(0xFF00C9A7),
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            totalIncome > 0
+                ? "You've spent ${(totalExpense / totalIncome * 100).toStringAsFixed(0)}% of your income."
+                : "No income for this period.",
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionButton(
+            label: 'Add Expense',
+            color: const Color(0xFFF25C54),
+            icon: Icons.remove_circle_outline,
+            onPress: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AddExpensePage()),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildActionButton(
+            onPress: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AddIncomePage()),
+              );
+            },
+            label: 'Add Income',
+            color: AppColors.mainColor,
+            icon: Icons.add_circle_outline,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentActivityHeader() {
+    return Text(
+      'Recent Activity',
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildRecentActivityContent(
+    BuildContext context,
+    TransactionModel? lastIncome,
+    TransactionModel? lastExpense,
+    NumberFormat currencyFormat,
+  ) {
+    if (lastExpense == null && lastIncome == null) {
+      return const Text(
+        "No transactions for this period",
+        style: TextStyle(color: Colors.grey),
+      );
+    }
+    return SizedBox(
+      height: 180, // Constrained height for cards
+      child: Row(
+        children: [
+          if (lastExpense != null)
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                lastExpense.title.isNotEmpty
+                    ? lastExpense.title
+                    : lastExpense.category,
+                currencyFormat.format(lastExpense.amount),
+                Icons.money_off,
+                const Color(0xFFF25C54),
+                "Latest Expense",
+              ),
+            ),
+          if (lastExpense != null && lastIncome != null)
+            const SizedBox(width: 16),
+          if (lastIncome != null)
+            Expanded(
+              child: _buildCategoryCard(
+                context,
+                lastIncome.title.isNotEmpty
+                    ? lastIncome.title
+                    : lastIncome.category,
+                currencyFormat.format(lastIncome.amount),
+                Icons.attach_money,
+                AppColors.mainColor,
+                "Latest Income",
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIInsights(BuildContext context) {
+    return _buildSectionCard(
+      context: context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 18,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'AI Insights',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Spending tracked via Firebase!',
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () {},
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
+            child: Text(
+              'View Details & Take Action',
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopTransactionItem(
+    BuildContext context,
+    TransactionModel t,
+    NumberFormat fmt,
+  ) {
+    final isExpense = t.type == 'Expense';
+    final color = isExpense ? Colors.redAccent : AppColors.mainColor;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            isExpense ? Icons.arrow_outward : Icons.arrow_downward,
+            color: color,
+            size: 18,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.title.isNotEmpty ? t.title : t.category,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                DateFormat('MMM dd, yyyy').format(t.date),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          fmt.format(t.amount),
+          style: TextStyle(color: color, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 

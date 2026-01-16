@@ -112,8 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Theme.of(context).brightness == Brightness.light
                       ? 'assets/logo3.png'
                       : 'assets/logo2.png',
-                  // height: 150,
-                  // color: AppColors.mainColor,
+                  height: MediaQuery.of(context).size.height * 0.9,
                 ),
               ),
             ),

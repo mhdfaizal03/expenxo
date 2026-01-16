@@ -1,11 +1,11 @@
 {
-    "name": "expenxo",
-    "short_name": "expenxo",
+    "name": "Expenxo - Expense Tracker",
+    "short_name": "Expenxo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#ffffff",
-    "description": "A new Flutter project.",
+    "description": "Track expenses, manage budgets, and achieve financial freedom.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

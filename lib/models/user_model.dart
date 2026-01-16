@@ -5,6 +5,7 @@ class UserModel {
   final String? photoUrl;
   final String? currencySymbol;
   final String? currencyCode;
+  final String? phoneNumber;
 
   UserModel({
     required this.uid,
@@ -13,6 +14,7 @@ class UserModel {
     this.photoUrl,
     this.currencySymbol,
     this.currencyCode,
+    this.phoneNumber,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, String uid) {
@@ -23,6 +25,7 @@ class UserModel {
       photoUrl: data['photoUrl'],
       currencySymbol: data['currencySymbol'],
       currencyCode: data['currencyCode'],
+      phoneNumber: data['phoneNumber'],
     );
   }
 
@@ -33,6 +36,7 @@ class UserModel {
       'photoUrl': photoUrl,
       'currencySymbol': currencySymbol,
       'currencyCode': currencyCode,
+      'phoneNumber': phoneNumber,
     };
   }
 }

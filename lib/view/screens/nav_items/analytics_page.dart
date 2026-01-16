@@ -82,6 +82,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
@@ -90,7 +91,22 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                    surface: AppColors.cardDark,
+                  )
+                : ColorScheme.light(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+            dialogBackgroundColor: isDark ? AppColors.cardDark : Colors.white,
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.mainColor),
+            ),
           ),
           child: child!,
         );
@@ -104,6 +120,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Future<void> _selectDateRange(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final DateTimeRange? picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -112,7 +129,32 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(primary: AppColors.mainColor),
+            scaffoldBackgroundColor: isDark
+                ? AppColors.scaffoldDark
+                : Colors.white,
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                    surface: AppColors.cardDark,
+                  )
+                : ColorScheme.light(
+                    primary: AppColors.mainColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+            dialogBackgroundColor: isDark ? AppColors.cardDark : Colors.white,
+            appBarTheme: AppBarTheme(
+              backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+              iconTheme: IconThemeData(
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              elevation: 0,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: AppColors.mainColor),
+            ),
           ),
           child: child!,
         );
@@ -358,79 +400,191 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   child: Flex(
                     direction: Axis.vertical,
                     children: [
-                      _buildReportCard(
-                        context: context,
-                        title: "Spending by Category",
-                        subtitle: _selectedFilter,
-                        child: Column(
-                          children: [
-                            if (totalExpense == 0)
-                              const SizedBox(
-                                height: 100,
-                                child: Center(
-                                  child: Text("No expenses for this period"),
-                                ),
-                              )
-                            else ...[
-                              SizedBox(
-                                height: 200,
-                                child: PieChart(
-                                  PieChartData(
-                                    sectionsSpace: 2,
-                                    centerSpaceRadius: 0,
-                                    sections: pieSections,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth >= 900) {
+                            // Desktop: Side-by-Side Charts
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Pie Chart
+                                Expanded(
+                                  child: _buildReportCard(
+                                    context: context,
+                                    title: "Spending by Category",
+                                    subtitle: _selectedFilter,
+                                    child: Column(
+                                      children: [
+                                        if (totalExpense == 0)
+                                          const SizedBox(
+                                            height: 100,
+                                            child: Center(
+                                              child: Text(
+                                                "No expenses for this period",
+                                              ),
+                                            ),
+                                          )
+                                        else ...[
+                                          SizedBox(
+                                            height: 200,
+                                            child: PieChart(
+                                              PieChartData(
+                                                sectionsSpace: 2,
+                                                centerSpaceRadius: 0,
+                                                sections: pieSections,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Wrap(
+                                            spacing: 12,
+                                            runSpacing: 8,
+                                            alignment: WrapAlignment.center,
+                                            children: categoryExpenses.keys.map(
+                                              (cat) {
+                                                int idx = categoryExpenses.keys
+                                                    .toList()
+                                                    .indexOf(cat);
+                                                return _indicator(
+                                                  palette[idx % palette.length],
+                                                  cat,
+                                                );
+                                              },
+                                            ).toList(),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Simple Legend (Dynamic)
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 8,
-                                alignment: WrapAlignment.center,
-                                children: categoryExpenses.keys.map((cat) {
-                                  int idx = categoryExpenses.keys
-                                      .toList()
-                                      .indexOf(cat);
-                                  return _indicator(
-                                    palette[idx % palette.length],
-                                    cat,
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // 2. Trend (Bar Chart)
-                      _buildReportCard(
-                        context: context,
-                        title: "Financial Trend",
-                        subtitle: _getChartSubtitle(),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              height: 200,
-                              child: _BarChartWidget(
-                                chartData: chartData,
-                                filter: _selectedFilter,
-                                customRange: _selectedRange,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _indicator(AppColors.mainColor, "Income"),
-                                const SizedBox(width: 20),
-                                _indicator(const Color(0xFFF25C54), "Expenses"),
+                                const SizedBox(width: 24),
+                                // Bar Chart
+                                Expanded(
+                                  child: _buildReportCard(
+                                    context: context,
+                                    title: "Financial Trend",
+                                    subtitle: _getChartSubtitle(),
+                                    child: Column(
+                                      children: [
+                                        SizedBox(
+                                          height: 200,
+                                          child: _BarChartWidget(
+                                            chartData: chartData,
+                                            filter: _selectedFilter,
+                                            customRange: _selectedRange,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            _indicator(
+                                              AppColors.mainColor,
+                                              "Income",
+                                            ),
+                                            const SizedBox(width: 20),
+                                            _indicator(
+                                              const Color(0xFFF25C54),
+                                              "Expenses",
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ],
-                            ),
-                          ],
-                        ),
+                            );
+                          } else {
+                            // Mobile: Vertical Stack
+                            return Column(
+                              children: [
+                                _buildReportCard(
+                                  context: context,
+                                  title: "Spending by Category",
+                                  subtitle: _selectedFilter,
+                                  child: Column(
+                                    children: [
+                                      if (totalExpense == 0)
+                                        const SizedBox(
+                                          height: 100,
+                                          child: Center(
+                                            child: Text(
+                                              "No expenses for this period",
+                                            ),
+                                          ),
+                                        )
+                                      else ...[
+                                        SizedBox(
+                                          height: 200,
+                                          child: PieChart(
+                                            PieChartData(
+                                              sectionsSpace: 2,
+                                              centerSpaceRadius: 0,
+                                              sections: pieSections,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Wrap(
+                                          spacing: 12,
+                                          runSpacing: 8,
+                                          alignment: WrapAlignment.center,
+                                          children: categoryExpenses.keys.map((
+                                            cat,
+                                          ) {
+                                            int idx = categoryExpenses.keys
+                                                .toList()
+                                                .indexOf(cat);
+                                            return _indicator(
+                                              palette[idx % palette.length],
+                                              cat,
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildReportCard(
+                                  context: context,
+                                  title: "Financial Trend",
+                                  subtitle: _getChartSubtitle(),
+                                  child: Column(
+                                    children: [
+                                      SizedBox(
+                                        height: 200,
+                                        child: _BarChartWidget(
+                                          chartData: chartData,
+                                          filter: _selectedFilter,
+                                          customRange: _selectedRange,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          _indicator(
+                                            AppColors.mainColor,
+                                            "Income",
+                                          ),
+                                          const SizedBox(width: 20),
+                                          _indicator(
+                                            const Color(0xFFF25C54),
+                                            "Expenses",
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        },
                       ),
 
                       const SizedBox(height: 16),

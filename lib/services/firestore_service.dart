@@ -43,6 +43,33 @@ class FirestoreService {
     }
   }
 
+  Future<String?> getUserPhoneNumber() async {
+    if (_userId == null) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(_userId).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data['phoneNumber'];
+      }
+      return null;
+    } catch (e) {
+      print("Error fetching user phone number: $e");
+      return null;
+    }
+  }
+
+  Future<void> updateUserPhoneNumber(String phoneNumber) async {
+    if (_userId == null) return;
+    try {
+      await _firestore.collection('users').doc(_userId).update({
+        'phoneNumber': phoneNumber,
+      });
+    } catch (e) {
+      print("Error updating user phone number: $e");
+      rethrow;
+    }
+  }
+
   Future<void> updateUserCurrency(String symbol, String code) async {
     if (_userId == null) return;
     try {

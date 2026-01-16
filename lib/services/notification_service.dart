@@ -1,5 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_messaging/firebase_messaging.dart' as fln;
+// REMOVED duplicate alias import for firebase_messaging to avoid conflict
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as fln;
 import 'package:timezone/data/latest.dart' as tz;
@@ -43,59 +43,111 @@ Future<void> _persistNotification(RemoteNotification notification) async {
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final fln.FlutterLocalNotificationsPlugin _localNotifications =
-      fln.FlutterLocalNotificationsPlugin();
+  // Make this nullable and do NOT instantiate it immediately
+  fln.FlutterLocalNotificationsPlugin? _localNotifications;
 
   Future<void> initialize() async {
-    tz.initializeTimeZones();
-
-    const fln.AndroidInitializationSettings initializationSettingsAndroid =
-        fln.AndroidInitializationSettings('@mipmap/launcher_icon');
-
-    const fln.DarwinInitializationSettings initializationSettingsDarwin =
-        fln.DarwinInitializationSettings();
-
-    final fln.InitializationSettings initializationSettings =
-        fln.InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-        );
-
-    await _localNotifications.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (details) {
-        if (kDebugMode) print("Notification Tapped: ${details.payload}");
-        // Optional: Navigate to NotificationPage
-      },
-    );
-
-    // Platform specific permission for Android 13+
-    final platform = _localNotifications
-        .resolvePlatformSpecificImplementation<
-          fln.AndroidFlutterLocalNotificationsPlugin
-        >();
-    if (platform != null) {
-      await platform.requestNotificationsPermission();
+    // 1. Initialize Timezones (Mobile only usually, or safe to skip if web issues)
+    if (!kIsWeb) {
+      try {
+        tz.initializeTimeZones();
+      } catch (e) {
+        if (kDebugMode) print("Timezone init error: $e");
+      }
     }
 
-    await _firebaseMessaging.requestPermission();
+    // 2. Initialize Local Notifications (Skip on Web to avoid errors)
+    if (!kIsWeb) {
+      _localNotifications = fln.FlutterLocalNotificationsPlugin();
+      const fln.AndroidInitializationSettings initializationSettingsAndroid =
+          fln.AndroidInitializationSettings('@mipmap/launcher_icon');
 
-    // Register Background Handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      const fln.DarwinInitializationSettings initializationSettingsDarwin =
+          fln.DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+          );
 
-    // Foreground Handler
+      final fln.InitializationSettings initializationSettings =
+          fln.InitializationSettings(
+            android: initializationSettingsAndroid,
+            iOS: initializationSettingsDarwin,
+          );
+
+      try {
+        await _localNotifications?.initialize(
+          initializationSettings,
+          onDidReceiveNotificationResponse: (details) {
+            if (kDebugMode) print("Notification Tapped: ${details.payload}");
+          },
+        );
+      } catch (e) {
+        if (kDebugMode) print("LocalNotifications init error: $e");
+      }
+
+      // 3. Request Permissions (Android & iOS)
+      try {
+        // Android 13+
+        final androidImplementation = _localNotifications
+            ?.resolvePlatformSpecificImplementation<
+              fln.AndroidFlutterLocalNotificationsPlugin
+            >();
+        if (androidImplementation != null) {
+          await androidImplementation.requestNotificationsPermission();
+        }
+
+        // iOS (Explicit request if needed, though usually handled by init settings above)
+        final iosImplementation = _localNotifications
+            ?.resolvePlatformSpecificImplementation<
+              fln.IOSFlutterLocalNotificationsPlugin
+            >();
+        if (iosImplementation != null) {
+          await iosImplementation.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) print("Permission request error: $e");
+      }
+    }
+
+    // 4. Firebase Permission (Works on Web too)
+    try {
+      await _firebaseMessaging.requestPermission();
+    } catch (e) {
+      if (kDebugMode) print("Firebase permission error: $e");
+    }
+
+    // 5. Background Handler (Skip on Web)
+    if (!kIsWeb) {
+      try {
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
+      } catch (e) {
+        if (kDebugMode) print("Background handler error: $e");
+      }
+    }
+
+    // 6. Foreground Handler
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       RemoteNotification? notification = message.notification;
-      fln.AndroidNotification? android = message.notification?.android;
+      // Fixed: Removed 'fln.' prefix as AndroidNotification comes from firebase_messaging
+      AndroidNotification? android = message.notification?.android;
 
-      if (notification != null && android != null) {
-        // Show Local Notification
-        showLocalNotification(
-          title: notification.title ?? 'Notification',
-          body: notification.body ?? '',
-        );
+      if (notification != null) {
+        // Show Local Notification ONLY if not Web and initialized
+        if (!kIsWeb && android != null && _localNotifications != null) {
+          showLocalNotification(
+            title: notification.title ?? 'Notification',
+            body: notification.body ?? '',
+          );
+        }
 
-        // Persist to Firestore so it shows in the list
+        // Persist to Firestore
         _persistNotification(notification);
       }
     });
@@ -106,26 +158,33 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    const fln.AndroidNotificationDetails androidDetails =
-        fln.AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          importance: fln.Importance.max,
-          priority: fln.Priority.high,
-        );
+    if (kIsWeb || _localNotifications == null) return;
 
-    const fln.NotificationDetails notificationDetails = fln.NotificationDetails(
-      android: androidDetails,
-      iOS: fln.DarwinNotificationDetails(),
-    );
+    try {
+      const fln.AndroidNotificationDetails androidDetails =
+          fln.AndroidNotificationDetails(
+            'high_importance_channel',
+            'High Importance Notifications',
+            importance: fln.Importance.max,
+            priority: fln.Priority.high,
+          );
 
-    await _localNotifications.show(
-      DateTime.now().millisecond,
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
-    );
+      const fln.NotificationDetails notificationDetails =
+          fln.NotificationDetails(
+            android: androidDetails,
+            iOS: fln.DarwinNotificationDetails(),
+          );
+
+      await _localNotifications?.show(
+        DateTime.now().millisecond,
+        title,
+        body,
+        notificationDetails,
+        payload: payload,
+      );
+    } catch (e) {
+      if (kDebugMode) print("Error showing notification: $e");
+    }
   }
 
   Future<void> scheduleNotification({
@@ -134,25 +193,36 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
-    await _localNotifications.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      const fln.NotificationDetails(
-        android: fln.AndroidNotificationDetails(
-          'scheduled_channel',
-          'Scheduled Notifications',
-          importance: fln.Importance.max,
-          priority: fln.Priority.high,
+    if (kIsWeb || _localNotifications == null) return;
+
+    try {
+      await _localNotifications?.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledDate, tz.local),
+        const fln.NotificationDetails(
+          android: fln.AndroidNotificationDetails(
+            'scheduled_channel',
+            'Scheduled Notifications',
+            importance: fln.Importance.max,
+            priority: fln.Priority.high,
+          ),
         ),
-      ),
-      androidScheduleMode: fln.AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: fln.DateTimeComponents.dateAndTime,
-    );
+        androidScheduleMode: fln.AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: fln.DateTimeComponents.dateAndTime,
+      );
+    } catch (e) {
+      if (kDebugMode) print("Error scheduling notification: $e");
+    }
   }
 
   Future<void> cancelNotification(int id) async {
-    await _localNotifications.cancel(id);
+    if (kIsWeb || _localNotifications == null) return;
+    try {
+      await _localNotifications?.cancel(id);
+    } catch (e) {
+      if (kDebugMode) print("Error cancelling notification: $e");
+    }
   }
 }

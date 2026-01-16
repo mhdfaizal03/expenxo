@@ -98,142 +98,315 @@ class BudgetPlannerPage extends StatelessWidget {
                       : 0;
                   double remaining = totalBudget - totalSpent;
 
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15.0,
-                          vertical: 10,
-                        ),
-                        child: SizedBox(
-                          height: 40,
-                          child: Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth >= 900) {
+                        // Desktop Grid
+                        return SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Budget Planner',
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).textTheme.headlineSmall?.color,
-                                    fontSize: 23,
-                                    fontWeight: FontWeight.bold,
+                                Center(
+                                  child: Text(
+                                    'Budget Planner',
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.headlineSmall?.color,
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
+                                const SizedBox(height: 24),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Left: Budget List (Grid)
+                                    Expanded(
+                                      flex: 2,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Category Budgets',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(
+                                                context,
+                                              ).textTheme.bodyLarge?.color,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          if (budgets.isEmpty)
+                                            const Center(
+                                              child: Text(
+                                                "No budgets set yet.",
+                                              ),
+                                            )
+                                          else
+                                            Wrap(
+                                              spacing: 20,
+                                              runSpacing: 20,
+                                              children: budgets.map((budget) {
+                                                // Logic duplicated for brevity, ideally extracted
+                                                double spent =
+                                                    categorySpent[budget
+                                                        .category] ??
+                                                    0;
+                                                double progress =
+                                                    budget.amount > 0
+                                                    ? spent / budget.amount
+                                                    : 0;
+                                                bool isOver =
+                                                    spent > budget.amount;
+                                                IconData icon =
+                                                    Icons.category_outlined;
+                                                if (budget.category.contains(
+                                                  'Food',
+                                                ))
+                                                  icon = Icons.restaurant;
+                                                else if (budget.category
+                                                    .contains('Transport'))
+                                                  icon = Icons
+                                                      .directions_car_outlined;
+                                                else if (budget.category
+                                                    .contains('Shopping'))
+                                                  icon = Icons
+                                                      .shopping_bag_outlined;
+                                                else if (budget.category
+                                                    .contains('Health'))
+                                                  icon = Icons.favorite_border;
+                                                else if (budget.category
+                                                    .contains('Entertainment'))
+                                                  icon = Icons.movie_outlined;
+                                                else if (budget.category.contains('Utilities'))
+                                                  icon = Icons.lightbulb_outline;
+
+                                                return SizedBox(
+                                                  width:
+                                                      (constraints.maxWidth *
+                                                              0.6 -
+                                                          40) /
+                                                      2, // Approx half of left col
+                                                  child: GestureDetector(
+                                                    onLongPress: () async {
+                                                      bool? confirm =
+                                                          await DialogUtils.showConfirmDialog(
+                                                            context: context,
+                                                            title:
+                                                                "Delete Budget",
+                                                            message:
+                                                                "Are you sure you want to delete the budget for ${budget.category}?",
+                                                            isDestructive: true,
+                                                          );
+                                                      if (confirm == true) {
+                                                        await Provider.of<
+                                                              FirestoreService
+                                                            >(
+                                                              context,
+                                                              listen: false,
+                                                            )
+                                                            .deleteBudget(
+                                                              budget.id,
+                                                            );
+                                                      }
+                                                    },
+                                                    child: _buildCategoryBudget(
+                                                      context: context,
+                                                      icon: icon,
+                                                      title: budget.category,
+                                                      allocated: currencyFormat
+                                                          .format(
+                                                            budget.amount,
+                                                          ),
+                                                      spent: currencyFormat
+                                                          .format(spent),
+                                                      progress: progress,
+                                                      isOverBudget: isOver,
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 24),
+                                    // Right: Overview Card
+                                    Expanded(
+                                      flex: 1,
+                                      child: Column(
+                                        children: [
+                                          _buildOverviewCard(
+                                            context,
+                                            totalSpent,
+                                            totalBudget,
+                                            remaining,
+                                            totalProgress,
+                                            currencyFormat,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 100),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                      // 1. Overall Budget Overview Card
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        );
+                      } else {
+                        // Mobile Layout (Original)
+                        return Column(
                           children: [
-                            _buildOverviewCard(
-                              context,
-                              totalSpent,
-                              totalBudget,
-                              remaining,
-                              totalProgress,
-                              currencyFormat,
-                            ),
-                            const SizedBox(height: 24),
-
-                            Text(
-                              'Category Budgets',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodySmall?.color,
+                            // Original Header
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15.0,
+                                vertical: 10,
                               ),
-                            ),
-                            Text(
-                              '(Press and hold to delete budgets)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey.withOpacity(0.8),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // 2. Category List from Budgets
-                            if (budgets.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.all(20.0),
+                              child: SizedBox(
+                                height: 40,
                                 child: Center(
-                                  child: Text(
-                                    "No budgets set yet. Tap + to add one.",
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Budget Planner',
+                                        style: TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).textTheme.headlineSmall?.color,
+                                          fontSize: 23,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              )
-                            else
-                              ...budgets.map((budget) {
-                                double spent =
-                                    categorySpent[budget.category] ?? 0;
-                                double progress = budget.amount > 0
-                                    ? spent / budget.amount
-                                    : 0;
-                                bool isOver = spent > budget.amount;
-
-                                IconData icon = Icons.category_outlined;
-                                if (budget.category.contains('Food'))
-                                  icon = Icons.restaurant;
-                                else if (budget.category.contains('Transport'))
-                                  icon = Icons.directions_car_outlined;
-                                else if (budget.category.contains('Shopping'))
-                                  icon = Icons.shopping_bag_outlined;
-                                else if (budget.category.contains('Health'))
-                                  icon = Icons.favorite_border;
-                                else if (budget.category.contains(
-                                  'Entertainment',
-                                ))
-                                  icon = Icons.movie_outlined;
-                                else if (budget.category.contains('Utilities'))
-                                  icon = Icons.lightbulb_outline;
-
-                                return GestureDetector(
-                                  onLongPress: () async {
-                                    // Quick Delete
-                                    bool?
-                                    confirm = await DialogUtils.showConfirmDialog(
-                                      context: context,
-                                      title: "Delete Budget",
-                                      message:
-                                          "Are you sure you want to delete the budget for ${budget.category}?",
-                                      isDestructive: true,
-                                    );
-                                    if (confirm == true) {
-                                      await Provider.of<FirestoreService>(
-                                        context,
-                                        listen: false,
-                                      ).deleteBudget(budget.id);
-                                    }
-                                  },
-                                  child: _buildCategoryBudget(
-                                    context: context,
-                                    icon: icon,
-                                    title: budget.category,
-                                    allocated: currencyFormat.format(
-                                      budget.amount,
-                                    ),
-                                    spent: currencyFormat.format(spent),
-                                    progress: progress,
-                                    isOverBudget: isOver,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildOverviewCard(
+                                    context,
+                                    totalSpent,
+                                    totalBudget,
+                                    remaining,
+                                    totalProgress,
+                                    currencyFormat,
                                   ),
-                                );
-                              }).toList(),
+                                  const SizedBox(height: 24),
+                                  Text(
+                                    'Category Budgets',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.color,
+                                    ),
+                                  ),
+                                  Text(
+                                    '(Press and hold to delete budgets)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      fontStyle: FontStyle.italic,
+                                      color: Colors.grey.withOpacity(0.8),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  if (budgets.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.all(20.0),
+                                      child: Center(
+                                        child: Text(
+                                          "No budgets set yet. Tap + to add one.",
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ...budgets.map((budget) {
+                                      double spent =
+                                          categorySpent[budget.category] ?? 0;
+                                      double progress = budget.amount > 0
+                                          ? spent / budget.amount
+                                          : 0;
+                                      bool isOver = spent > budget.amount;
+                                      IconData icon = Icons.category_outlined;
+                                      if (budget.category.contains('Food'))
+                                        icon = Icons.restaurant;
+                                      else if (budget.category.contains(
+                                        'Transport',
+                                      ))
+                                        icon = Icons.directions_car_outlined;
+                                      else if (budget.category.contains(
+                                        'Shopping',
+                                      ))
+                                        icon = Icons.shopping_bag_outlined;
+                                      else if (budget.category.contains(
+                                        'Health',
+                                      ))
+                                        icon = Icons.favorite_border;
+                                      else if (budget.category.contains(
+                                        'Entertainment',
+                                      ))
+                                        icon = Icons.movie_outlined;
+                                      else if (budget.category.contains(
+                                        'Utilities',
+                                      ))
+                                        icon = Icons.lightbulb_outline;
+
+                                      return GestureDetector(
+                                        onLongPress: () async {
+                                          bool? confirm =
+                                              await DialogUtils.showConfirmDialog(
+                                                context: context,
+                                                title: "Delete Budget",
+                                                message:
+                                                    "Are you sure you want to delete the budget for ${budget.category}?",
+                                                isDestructive: true,
+                                              );
+                                          if (confirm == true) {
+                                            await Provider.of<FirestoreService>(
+                                              context,
+                                              listen: false,
+                                            ).deleteBudget(budget.id);
+                                          }
+                                        },
+                                        child: _buildCategoryBudget(
+                                          context: context,
+                                          icon: icon,
+                                          title: budget.category,
+                                          allocated: currencyFormat.format(
+                                            budget.amount,
+                                          ),
+                                          spent: currencyFormat.format(spent),
+                                          progress: progress,
+                                          isOverBudget: isOver,
+                                        ),
+                                      );
+                                    }).toList(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 100),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 100),
-                    ],
+                        );
+                      }
+                    },
                   );
                 },
               );

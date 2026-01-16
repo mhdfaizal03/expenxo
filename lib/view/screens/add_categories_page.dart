@@ -2,6 +2,7 @@ import 'package:expenxo/models/category_model.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
+import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -169,8 +170,10 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
 
   Future<void> _saveCategory() async {
     if (categoryName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a category name")),
+      ToastUtil.showToast(
+        context,
+        "Please enter a category name",
+        isError: true,
       );
       return;
     }
@@ -192,16 +195,11 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
       ).addCategory(category);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Category added successfully!")),
-        );
+        ToastUtil.showToast(context, "Category added successfully!");
         Navigator.pop(context);
       }
     } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) ToastUtil.showToast(context, "Error: $e", isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

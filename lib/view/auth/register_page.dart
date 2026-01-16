@@ -1,8 +1,10 @@
 import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/nav_bar.dart';
+import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:expenxo/providers/preferences_provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -29,17 +31,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _signUp() async {
     if (!_agreedToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please agree to the terms')),
-      );
+      ToastUtil.showToast(context, 'Please agree to the terms', isError: true);
       return;
     }
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      ToastUtil.showToast(context, 'Please fill in all fields', isError: true);
       return;
     }
 
@@ -52,16 +50,59 @@ class _RegisterPageState extends State<RegisterPage> {
         _nameController.text.trim(),
       );
       if (mounted) {
-        Navigator.pushAndRemoveUntil(
+        // Sync preferences
+        await Provider.of<PreferencesProvider>(
           context,
-          MaterialPageRoute(builder: (context) => const NavBar()),
-          (route) => false,
-        );
+          listen: false,
+        ).syncFromFirestore();
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const NavBar()),
+            (route) => false,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration failed: ${e.toString()}')),
+        ToastUtil.showToast(
+          context,
+          'Registration failed: ${e.toString()}',
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final user = await authService.signInWithGoogle();
+      if (user != null && mounted) {
+        // Sync preferences
+        await Provider.of<PreferencesProvider>(
+          context,
+          listen: false,
+        ).syncFromFirestore();
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const NavBar()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastUtil.showToast(
+          context,
+          "Google Sign-Up failed: ${e.toString()}",
+          isError: true,
         );
       }
     } finally {
@@ -265,10 +306,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     context,
                     "Sign up with Google",
                     Icons.account_circle_outlined,
+                    onPressed: _signInWithGoogle,
                   ),
                   const SizedBox(height: 12),
-                  _socialButton(context, "Sign up with Apple", Icons.apple),
 
+                  // _socialButton(context, "Sign up with Apple", Icons.apple), // Removed as requested to clean up
                   const SizedBox(height: 20),
                   // Already have an account
                   Row(
@@ -353,12 +395,17 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _socialButton(BuildContext context, String text, IconData icon) {
+  Widget _socialButton(
+    BuildContext context,
+    String text,
+    IconData icon, {
+    VoidCallback? onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
       height: 55,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
         icon: Icon(icon, color: Theme.of(context).iconTheme.color, size: 22),
         label: Text(
           text,

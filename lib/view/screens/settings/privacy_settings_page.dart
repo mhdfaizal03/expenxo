@@ -1,4 +1,5 @@
 import 'package:expenxo/utils/constands/colors.dart';
+import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -46,15 +47,11 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       await firestoreService.manualSync();
       await _loadSyncStatus();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Data synced successfully!")),
-        );
+        ToastUtil.showToast(context, "Data synced successfully!");
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Sync failed: $e")));
+        ToastUtil.showToast(context, "Sync failed: $e", isError: true);
       }
     } finally {
       if (mounted) setState(() => _isSyncing = false);
@@ -71,9 +68,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       await firestoreService.exportTransactionsToCsv();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Export failed: $e")));
+        ToastUtil.showToast(context, "Export failed: $e", isError: true);
       }
     } finally {
       if (mounted) setState(() => _isExporting = false);
@@ -214,20 +209,19 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                             // Hide loading
                             Navigator.pop(context);
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("All data deleted successfully."),
-                                backgroundColor: Colors.red,
-                              ),
+                            ToastUtil.showToast(
+                              context,
+                              "All data deleted successfully!",
+                              isError: true,
                             );
 
                             _loadSyncStatus(); // Refresh status
                           } catch (e) {
                             Navigator.pop(context); // Hide loading
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Error deleting data: $e"),
-                              ),
+                            ToastUtil.showToast(
+                              context,
+                              "Error deleting data: $e",
+                              isError: true,
                             );
                           }
                         },

@@ -7,7 +7,6 @@ import 'package:expenxo/providers/ai_provider.dart';
 import 'package:expenxo/services/notification_service.dart';
 import 'package:expenxo/view/auth/splash_screen.dart';
 import 'package:expenxo/services/sms_service.dart';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

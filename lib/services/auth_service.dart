@@ -1,5 +1,5 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expenxo/models/user_model.dart';
 import 'package:flutter/foundation.dart';
@@ -22,15 +22,11 @@ class AuthService extends ChangeNotifier {
       User? user = result.user;
 
       if (user != null) {
-        UserModel newUser = UserModel(
-          uid: user.uid,
-          email: email,
-          name: name,
-        );
+        UserModel newUser = UserModel(uid: user.uid, email: email, name: name);
 
         // Save user to Firestore
         await _firestore.collection('users').doc(user.uid).set(newUser.toMap());
-        
+
         notifyListeners();
         return newUser;
       }
@@ -60,9 +56,72 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // Google Sign In
+  Future<User?> signInWithGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser != null) {
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        UserCredential userCredential = await _auth.signInWithCredential(
+          credential,
+        );
+        User? user = userCredential.user;
+
+        if (user != null) {
+          // Check if user exists in Firestore, if not create
+          final userDoc = await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          if (!userDoc.exists) {
+            UserModel newUser = UserModel(
+              uid: user.uid,
+              email: user.email!,
+              name: user.displayName ?? 'No Name',
+            );
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .set(newUser.toMap());
+          }
+          notifyListeners();
+          return user;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error signing in with Google: $e");
+      }
+      rethrow;
+    }
+    return null;
+  }
+
+  // Password Reset
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error sending password reset email: $e");
+      }
+      rethrow;
+    }
+  }
+
   // Sign Out
   Future<void> signOut() async {
     await _auth.signOut();
+    final GoogleSignIn googleSignIn = GoogleSignIn();
+    await googleSignIn.signOut();
     notifyListeners();
   }
 }

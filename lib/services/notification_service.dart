@@ -50,7 +50,7 @@ class NotificationService {
     tz.initializeTimeZones();
 
     const fln.AndroidInitializationSettings initializationSettingsAndroid =
-        fln.AndroidInitializationSettings('@mipmap/ic_launcher');
+        fln.AndroidInitializationSettings('@mipmap/launcher_icon');
 
     const fln.DarwinInitializationSettings initializationSettingsDarwin =
         fln.DarwinInitializationSettings();

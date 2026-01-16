@@ -3,6 +3,7 @@ import 'package:expenxo/models/category_model.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
+import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -269,10 +270,10 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     if (_nameController.text.isEmpty ||
         _amountController.text.isEmpty ||
         _selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill all fields and select a category"),
-        ),
+      ToastUtil.showToast(
+        context,
+        "Please fill all fields and select a category",
+        isError: true,
       );
       return;
     }
@@ -320,15 +321,11 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Budget saved successfully!")),
-        );
+        ToastUtil.showToast(context, "Budget saved successfully!");
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error saving budget: $e")));
+        ToastUtil.showToast(context, "Error saving budget: $e", isError: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

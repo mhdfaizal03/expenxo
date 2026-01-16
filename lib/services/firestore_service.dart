@@ -43,6 +43,40 @@ class FirestoreService {
     }
   }
 
+  Future<void> updateUserCurrency(String symbol, String code) async {
+    if (_userId == null) return;
+    try {
+      await _firestore.collection('users').doc(_userId).update({
+        'currencySymbol': symbol,
+        'currencyCode': code,
+      });
+    } catch (e) {
+      print("Error updating user currency: $e");
+      // Don't rethrow, just log, as this is a preference update
+    }
+  }
+
+  Future<Map<String, String>?> getUserCurrency() async {
+    if (_userId == null) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(_userId).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data.containsKey('currencySymbol') &&
+            data.containsKey('currencyCode')) {
+          return {
+            'symbol': data['currencySymbol'],
+            'code': data['currencyCode'],
+          };
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Error fetching user currency: $e");
+      return null;
+    }
+  }
+
   // --- Transactions ---
 
   final NotificationService _notificationService = NotificationService();

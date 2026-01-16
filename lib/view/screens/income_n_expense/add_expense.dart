@@ -6,8 +6,9 @@ import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
+import 'package:expenxo/utils/toast_util.dart';
+import 'package:provider/provider.dart';
 
 class AddExpensePage extends StatefulWidget {
   const AddExpensePage({super.key});
@@ -35,15 +36,15 @@ class _AddExpensePageState extends State<AddExpensePage> {
   void _saveExpense() async {
     final amountText = _amountController.text;
     if (amountText.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter an amount')));
+      ToastUtil.showToast(context, 'Please enter an amount', isError: true);
       return;
     }
     final amount = double.tryParse(amountText);
     if (amount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
+      ToastUtil.showToast(
+        context,
+        'Please enter a valid amount',
+        isError: true,
       );
       return;
     }
@@ -74,9 +75,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving expense: $e')));
+        ToastUtil.showToast(context, 'Error saving expense: $e', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -260,10 +259,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
               child: InkWell(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Receipt upload not implemented yet'),
-                    ),
+                  ToastUtil.showToast(
+                    context,
+                    'Receipt upload not implemented yet',
                   );
                 },
                 child: const Row(

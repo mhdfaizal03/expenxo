@@ -55,7 +55,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(vertical: 20),
           child: Column(
             children: [
               /// 🔹 Skip Button
@@ -67,10 +67,15 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                         onTap: () {
                           _completeOnboarding();
                         },
-                        child: Text(
-                          "Skip",
-                          style: TextStyle(
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            "Skip",
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyLarge?.color,
+                            ),
                           ),
                         ),
                       ),
@@ -121,59 +126,65 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
               ),
 
               /// 🔹 Page Indicator
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      pageList.length,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 1),
-                        height: 8,
-                        width: _currentIndex == index ? 20 : 8,
-                        decoration: BoxDecoration(
-                          color: _currentIndex == index
-                              ? AppColors.mainColor
-                              : Theme.of(context).dividerColor,
-                          borderRadius: BorderRadius.circular(10),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 20,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        pageList.length,
+                        (index) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
+                          height: 8,
+                          width: _currentIndex == index ? 20 : 8,
+                          decoration: BoxDecoration(
+                            color: _currentIndex == index
+                                ? AppColors.mainColor
+                                : Theme.of(context).dividerColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 30),
+                    const SizedBox(height: 30),
 
-                  /// 🔹 Continue Button
-                  SizedBox(
-                    width: 200,
-                    height: 50,
-                    child: MaterialButton(
-                      textColor: Colors.white,
-                      color: AppColors.mainColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadiusGeometry.circular(10),
-                      ),
-                      onPressed: () {
-                        if (_currentIndex == pageList.length - 1) {
-                          _completeOnboarding();
-                        } else {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      },
-                      child: Text(
-                        _currentIndex == pageList.length - 1
-                            ? "Get Started"
-                            : "Next",
-                        style: const TextStyle(fontSize: 19),
+                    /// 🔹 Continue Button
+                    SizedBox(
+                      width: 200,
+                      height: 50,
+                      child: MaterialButton(
+                        textColor: Colors.white,
+                        color: AppColors.mainColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadiusGeometry.circular(10),
+                        ),
+                        onPressed: () {
+                          if (_currentIndex == pageList.length - 1) {
+                            _completeOnboarding();
+                          } else {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        child: Text(
+                          _currentIndex == pageList.length - 1
+                              ? "Get Started"
+                              : "Next",
+                          style: const TextStyle(fontSize: 19),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 20),

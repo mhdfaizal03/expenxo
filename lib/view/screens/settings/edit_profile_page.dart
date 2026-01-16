@@ -1,5 +1,6 @@
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
+import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -37,15 +38,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ).updateUserName(_nameController.text.trim());
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Profile Updated")));
+        ToastUtil.showToast(context, "Profile Updated");
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ToastUtil.showToast(context, "Error: $e", isError: true);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

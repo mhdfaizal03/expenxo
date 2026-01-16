@@ -2,8 +2,10 @@ import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/auth/register_page.dart';
 import 'package:expenxo/view/nav_bar.dart';
+import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:expenxo/providers/preferences_provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -27,9 +29,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _signIn() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      ToastUtil.showToast(context, 'Please fill in all fields', isError: true);
       return;
     }
 
@@ -43,22 +43,119 @@ class _LoginPageState extends State<LoginPage> {
 
       if (authService.currentUser != null) {
         if (mounted) {
+          // Sync preferences
+          await Provider.of<PreferencesProvider>(
+            context,
+            listen: false,
+          ).syncFromFirestore();
+
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => NavBar()),
+              (route) => false,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ToastUtil.showToast(
+          context,
+          'Login failed: ${e.toString()}',
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final user = await authService.signInWithGoogle();
+      if (user != null && mounted) {
+        // Sync preferences
+        await Provider.of<PreferencesProvider>(
+          context,
+          listen: false,
+        ).syncFromFirestore();
+
+        if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => NavBar()),
+            MaterialPageRoute(builder: (context) => const NavBar()),
             (route) => false,
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${e.toString()}')),
+        ToastUtil.showToast(
+          context,
+          "Google Sign-In failed: ${e.toString()}",
+
+          isError: true,
         );
       }
+      debugPrint(e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _forgotPassword() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController resetEmailController =
+            TextEditingController();
+        return AlertDialog(
+          title: const Text('Reset Password'),
+          content: TextField(
+            controller: resetEmailController,
+            decoration: const InputDecoration(hintText: "Enter your email"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (resetEmailController.text.isNotEmpty) {
+                  try {
+                    await Provider.of<AuthService>(
+                      context,
+                      listen: false,
+                    ).sendPasswordResetEmail(resetEmailController.text.trim());
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ToastUtil.showToast(
+                        context,
+                        'Password reset email sent!',
+                        isError: false,
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ToastUtil.showToast(
+                        context,
+                        'Error: ${e.toString()}',
+                        isError: true,
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Send'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -79,15 +176,15 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Logo/Brand Name
-                    Text(
-                      'Expenxo',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                    SizedBox(
+                      height: 180,
+                      child: Image.asset(
+                        Theme.of(context).brightness == Brightness.light
+                            ? 'assets/logo3.png'
+                            : 'assets/logo2.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(height: 20),
                     // Header
                     Text(
                       'Welcome Back!',
@@ -98,15 +195,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Sign in to continue managing your finances.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
 
                     // Email/Phone Input
                     _buildLabel("Email"),
@@ -151,7 +239,7 @@ class _LoginPageState extends State<LoginPage> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: _forgotPassword,
                         child: Text(
                           'Forgot Password?',
                           style: TextStyle(color: AppColors.mainColor),
@@ -210,24 +298,24 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
 
                     // Social Logins
-                    _socialButton(
-                      context,
-                      "Continue with Google",
-                      "assets/google_logo.png",
-                      Icons.api,
-                    ),
-                    const SizedBox(height: 12),
-                    _socialButton(
-                      context,
-                      "Continue with Apple",
-                      "assets/apple_logo.png",
-                      Icons.apple,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _socialButton(
+                            context,
+                            "Continue with Google",
+                            Icons.api,
+                            onPressed: _signInWithGoogle,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
                     // Create Account Link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -309,19 +397,14 @@ class _LoginPageState extends State<LoginPage> {
   Widget _socialButton(
     BuildContext context,
     String text,
-    String assetPath,
-    IconData fallbackIcon,
-  ) {
+    IconData icon, {
+    VoidCallback? onPressed,
+  }) {
     return SizedBox(
-      width: double.infinity,
       height: 55,
       child: OutlinedButton.icon(
-        onPressed: () {},
-        icon: Icon(
-          fallbackIcon,
-          color: Theme.of(context).iconTheme.color,
-          size: 24,
-        ),
+        onPressed: onPressed ?? () {},
+        icon: Icon(icon, color: Theme.of(context).iconTheme.color, size: 24),
         label: Text(
           text,
           style: TextStyle(

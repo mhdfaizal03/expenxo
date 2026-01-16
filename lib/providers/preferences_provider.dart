@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:expenxo/services/firestore_service.dart';
 
 class PreferencesProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.light;
@@ -56,7 +57,40 @@ class PreferencesProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('currencySymbol', symbol);
     await prefs.setString('currencyCode', code);
+
+    // Sync to Firestore
+    try {
+      final firestoreService = FirestoreService();
+      await firestoreService.updateUserCurrency(symbol, code);
+    } catch (e) {
+      debugPrint("Error syncing currency to firestore: $e");
+    }
+
     notifyListeners();
+  }
+
+  Future<void> syncFromFirestore() async {
+    try {
+      final firestoreService = FirestoreService();
+      final currencyData = await firestoreService.getUserCurrency();
+
+      if (currencyData != null) {
+        final symbol = currencyData['symbol'];
+        final code = currencyData['code'];
+
+        if (symbol != null && code != null) {
+          _currencySymbol = symbol;
+          _currencyCode = code;
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('currencySymbol', symbol);
+          await prefs.setString('currencyCode', code);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error syncing currency from firestore: $e");
+    }
   }
 
   Future<void> setGeneralNotifications(bool value) async {

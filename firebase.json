@@ -1,5 +1,6 @@
 {
     "hosting": {
+        "site": "expenxo",
         "public": "build/web",
         "ignore": [
             "firebase.json",

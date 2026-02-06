@@ -18,10 +18,13 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   bool _agreedToTerms = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   // Added phone controller
   final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
@@ -31,6 +34,7 @@ class _RegisterPageState extends State<RegisterPage> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _phoneController.dispose(); // Dispose phone controller
     super.dispose();
   }
@@ -44,8 +48,22 @@ class _RegisterPageState extends State<RegisterPage> {
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty ||
         _phoneController.text.isEmpty) {
       ToastUtil.showToast(context, 'Please fill in all fields', isError: true);
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ToastUtil.showToast(context, 'Passwords do not match', isError: true);
+      return;
+    }
+
+    // Basic Email Validation
+    if (!RegExp(
+      r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+",
+    ).hasMatch(_emailController.text)) {
+      ToastUtil.showToast(context, 'Please enter a valid email', isError: true);
       return;
     }
 
@@ -198,6 +216,37 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     onPressed: () => setState(
                       () => _isPasswordVisible = !_isPasswordVisible,
+                    ),
+                  ),
+                ),
+          ),
+          const SizedBox(height: 16),
+
+          // Confirm Password
+          _buildLabel("Confirm Password"),
+          TextField(
+            controller: _confirmPasswordController,
+            obscureText: !_isConfirmPasswordVisible,
+            style: TextStyle(
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+            decoration:
+                _inputDecoration(
+                  context,
+                  "********",
+                  Icons.lock_outline,
+                ).copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isConfirmPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_outlined,
+                      color: Theme.of(context).iconTheme.color,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(
+                      () => _isConfirmPasswordVisible =
+                          !_isConfirmPasswordVisible,
                     ),
                   ),
                 ),

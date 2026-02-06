@@ -42,7 +42,7 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.only(left: 5, right: 5, bottom: 5),
+        padding: const EdgeInsets.only(bottom: 5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           boxShadow: [

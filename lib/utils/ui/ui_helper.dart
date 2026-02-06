@@ -65,7 +65,7 @@ class DialogUtils {
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withAlpha((0.15 * 255).toInt()),
                     blurRadius: 30,
                     offset: const Offset(0, 10),
                   ),
@@ -99,7 +99,7 @@ class DialogUtils {
                             decoration: BoxDecoration(
                               color: Theme.of(
                                 context,
-                              ).dividerColor.withOpacity(0.1),
+                              ).dividerColor.withAlpha((0.1 * 255).toInt()),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -185,7 +185,7 @@ class DialogUtils {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha((0.1 * 255).toInt()),
               shape: BoxShape.circle,
             ),
             child: Icon(iconData, color: color, size: 32),
@@ -253,11 +253,11 @@ class PremiumDropdown<T> extends StatelessWidget {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
+          color: Theme.of(context).dividerColor.withAlpha((0.1 * 255).toInt()),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withAlpha((0.02 * 255).toInt()),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

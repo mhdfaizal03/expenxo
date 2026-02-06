@@ -1,8 +1,11 @@
 import 'package:expenxo/providers/ai_provider.dart';
 import 'package:expenxo/utils/constands/colors.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:expenxo/view/widgets/glass_container.dart';
 
 class AIAssistantPage extends StatefulWidget {
   const AIAssistantPage({super.key});
@@ -92,20 +95,17 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
                       context: context,
                       isAI: !msg.isUser,
                       text: msg.text,
-                    );
+                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1);
                   },
                 ),
               ),
 
               // Input Area
-              Container(
+              GlassContainer(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  border: Border(
-                    top: BorderSide(color: Theme.of(context).dividerColor),
-                  ),
-                ),
+                borderRadius: 0, // Bottom sheet style
+                borderOpacity: 0.1,
+                borderColor: Theme.of(context).dividerColor,
                 child: Row(
                   children: [
                     Expanded(
@@ -121,7 +121,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
                             vertical: 12,
                           ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(20),
                             borderSide: BorderSide.none,
                           ),
                         ),
@@ -175,18 +175,25 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: Container(
+            child: GlassContainer(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isAI ? Theme.of(context).cardColor : AppColors.mainColor,
-                borderRadius: BorderRadius.circular(16).copyWith(
-                  topLeft: isAI ? Radius.zero : const Radius.circular(16),
-                  bottomRight: isAI ? const Radius.circular(16) : Radius.zero,
-                ),
-                border: isAI
-                    ? Border.all(color: Theme.of(context).dividerColor)
-                    : null,
-              ),
+              color: isAI
+                  ? Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.glassBgDark
+                        : AppColors.glassBgLight
+                  : AppColors.mainColor.withOpacity(
+                      0.9,
+                    ), // Keeping User msg distinct but glass-like
+              borderRadius: 20,
+              // Custom radius for chat bubbles
+              // GlassContainer defaults to all 20, but we want varied corners.
+              // Use a custom child if we need specific corners, or accept GlassContainer has uniform corners for now.
+              // Let's stick to uniform for modern glass look, or wrap in ClipRRect if strict.
+              // Actually, GlassContainer takes a child. We can accept uniform 20 for now as it looks good.
+              borderOpacity: isAI ? 0.1 : 0,
+              borderColor: isAI
+                  ? Theme.of(context).dividerColor
+                  : Colors.transparent,
               child: MarkdownBody(
                 data: text,
                 styleSheet: MarkdownStyleSheet(
@@ -233,23 +240,16 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
+                topRight: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+                bottomLeft: Radius.circular(20),
               ),
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.mainColor,
-                  ),
-                ),
+                const ShimmerLoading.circular(width: 12, height: 12),
                 const SizedBox(width: 8),
                 Text(
                   "Thinking...",

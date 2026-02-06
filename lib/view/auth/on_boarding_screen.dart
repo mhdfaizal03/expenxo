@@ -2,6 +2,7 @@ import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/auth/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class OnBoardingScreen extends StatefulWidget {
   const OnBoardingScreen({super.key});
@@ -16,19 +17,19 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
 
   final List<Map<String, String>> pageList = [
     {
-      "image": "assets/selection.png",
+      "image": "assets/icons/transaction.png",
       "title": "Track expenses easily",
       "subtitle":
           "Effortlessly log your daily spending and keep a clear overview of where your money goes.",
     },
     {
-      "image": "assets/selection.png",
+      "image": "assets/icons/ai.png",
       "title": "Smart AI insights & budgeting",
       "subtitle":
           "Let AI analyze your habits, suggest budgets, and help you save smarter.",
     },
     {
-      "image": "assets/selection.png",
+      "image": "assets/icons/budget.png",
       "title": "Secure Cloud Sync",
       "subtitle":
           "Your financial data is safe, secure, and accessible across all your devices with Firebase.",
@@ -75,6 +76,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                               color: Theme.of(
                                 context,
                               ).textTheme.bodyLarge?.color,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -94,30 +96,39 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(item["image"]!, height: size.height * 0.3),
-                        const SizedBox(height: 30),
-                        Text(
-                          item["title"]!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+                        Image.asset(item["image"]!, height: size.height * 0.35)
+                            .animate()
+                            .fadeIn(duration: 600.ms)
+                            .scale(begin: const Offset(0.8, 0.8)),
+                        const SizedBox(height: 40),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            item["title"]!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyLarge?.color,
+                            ),
+                          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 30),
                           child: Text(
                             item["subtitle"]!,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
+                              height: 1.5,
                               color: Theme.of(
                                 context,
                               ).textTheme.bodySmall?.color,
                             ),
-                          ),
+                          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
                         ),
                       ],
                     );
@@ -142,7 +153,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                           duration: const Duration(milliseconds: 300),
                           margin: const EdgeInsets.symmetric(horizontal: 1),
                           height: 8,
-                          width: _currentIndex == index ? 20 : 8,
+                          width: _currentIndex == index ? 24 : 8,
                           decoration: BoxDecoration(
                             color: _currentIndex == index
                                 ? AppColors.mainColor
@@ -153,17 +164,16 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 30),
-
                     /// 🔹 Continue Button
                     SizedBox(
-                      width: 200,
-                      height: 50,
+                      width: 160,
+                      height: 56,
                       child: MaterialButton(
                         textColor: Colors.white,
+                        elevation: 0,
                         color: AppColors.mainColor,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadiusGeometry.circular(10),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         onPressed: () {
                           if (_currentIndex == pageList.length - 1) {
@@ -179,15 +189,16 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                           _currentIndex == pageList.length - 1
                               ? "Get Started"
                               : "Next",
-                          style: const TextStyle(fontSize: 19),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 20),
             ],
           ),
         ),

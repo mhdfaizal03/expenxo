@@ -23,6 +23,24 @@ class TransactionModel {
     this.isSms = false,
   });
 
+  factory TransactionModel.fromMap(Map<String, dynamic> data, {String? id}) {
+    return TransactionModel(
+      id: id ?? data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      title: data['title'] ?? '',
+      amount: (data['amount'] ?? 0.0).toDouble(),
+      type: data['type'] ?? 'Expense',
+      category: data['category'] ?? 'General',
+      date: data['date'] is Timestamp
+          ? (data['date'] as Timestamp).toDate()
+          : (data['date'] is String
+                ? DateTime.parse(data['date'])
+                : DateTime.now()),
+      description: data['description'] ?? '',
+      isSms: data['isSms'] ?? false,
+    );
+  }
+
   factory TransactionModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return TransactionModel(
@@ -46,6 +64,20 @@ class TransactionModel {
       'type': type,
       'category': category,
       'date': Timestamp.fromDate(date),
+      'description': description,
+      'isSms': isSms,
+    };
+  }
+
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'id': id,
+      'userId': userId,
+      'title': title,
+      'amount': amount,
+      'type': type,
+      'category': category,
+      'date': date.toIso8601String(),
       'description': description,
       'isSms': isSms,
     };

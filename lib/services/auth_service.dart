@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expenxo/models/user_model.dart';
+import 'package:expenxo/services/local_storage_service.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService extends ChangeNotifier {
@@ -140,6 +141,10 @@ class AuthService extends ChangeNotifier {
     await _auth.signOut();
     final GoogleSignIn googleSignIn = GoogleSignIn();
     await googleSignIn.signOut();
+
+    // Clear local cache on logout
+    await LocalStorageService().clearCache();
+
     notifyListeners();
   }
 }

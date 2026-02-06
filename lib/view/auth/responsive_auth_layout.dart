@@ -105,7 +105,7 @@ class ResponsiveAuthLayout extends StatelessWidget {
                     decoration: isDesktop
                         ? BoxDecoration(
                             color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),

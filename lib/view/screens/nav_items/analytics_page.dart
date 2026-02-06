@@ -3,10 +3,12 @@ import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:expenxo/view/widgets/glass_container.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -177,8 +179,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return StreamBuilder<List<TransactionModel>>(
       stream: firestoreService.getTransactions(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const ShimmerCard(height: 300);
         }
 
         final prefs = Provider.of<PreferencesProvider>(context);
@@ -624,15 +627,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       const SizedBox(height: 16),
 
                       // 4. AI Insights Box
-                      Container(
+                      GlassContainer(
                         padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.mainColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.mainColor.withOpacity(0.2),
-                          ),
-                        ),
+                        color: AppColors.mainColor.withOpacity(0.1),
+                        borderRadius: 20,
+                        borderColor: AppColors.mainColor,
+                        borderOpacity: 0.2,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -696,16 +696,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     required String subtitle,
     required Widget child,
   }) {
-    return Container(
+    return GlassContainer(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-        ),
-      ),
+      borderRadius: 20,
+      borderOpacity: 0.1,
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

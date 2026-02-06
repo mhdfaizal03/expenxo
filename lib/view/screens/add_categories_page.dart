@@ -3,8 +3,10 @@ import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
 import 'package:expenxo/utils/toast_util.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class AddCategoryPage extends StatefulWidget {
   const AddCategoryPage({super.key});
@@ -99,7 +101,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
             _buildPreviewCard(),
             const SizedBox(height: 32),
           ],
-        ),
+        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
       ),
       bottomNavigationBar: _buildBottomButtons(),
     );
@@ -144,13 +146,13 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
               setState(() => selectedIcon = icon);
               Navigator.pop(context);
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
             child: Container(
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.mainColor.withOpacity(0.1)
                     : Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
                       ? AppColors.mainColor
@@ -222,11 +224,11 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     hintText: hint,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(20),
       borderSide: BorderSide(color: Theme.of(context).dividerColor),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(20),
       borderSide: const BorderSide(color: Color(0xFF00C9A7)),
     ),
   );
@@ -234,7 +236,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   Widget _buildActionTile(IconData icon, String label) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(20),
       border: Border.all(color: Theme.of(context).dividerColor),
     ),
     child: Row(
@@ -283,7 +285,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     padding: const EdgeInsets.all(4),
     decoration: BoxDecoration(
       color: Theme.of(context).cardColor,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(20),
     ),
     child: Row(
       children: [
@@ -304,7 +306,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: active ? const Color(0xFF00C9A7) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -326,7 +328,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   Widget _buildPreviewCard() => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       border: Border.all(color: Theme.of(context).dividerColor),
     ),
     child: Column(
@@ -337,7 +339,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: selectedColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(selectedIcon, color: Colors.white),
             ),
@@ -363,7 +365,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               side: const BorderSide(color: Color(0xFFF25C54)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
               ),
             ),
             child: const Text(
@@ -381,18 +383,11 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
               ),
             ),
             child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
+                ? const ShimmerLoading.circular(width: 20, height: 20)
                 : const Text(
                     "Save",
                     style: TextStyle(

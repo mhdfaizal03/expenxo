@@ -1,6 +1,7 @@
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
@@ -117,7 +118,7 @@ class HelpSupportPage extends StatelessWidget {
             "Let us know if something's broken",
             _launchBugReport,
           ),
-        ],
+        ].animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
       ),
     );
   }
@@ -126,7 +127,7 @@ class HelpSupportPage extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       color: Theme.of(context).cardColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ExpansionTile(
         title: Text(
           question,
@@ -164,7 +165,7 @@ class HelpSupportPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: Theme.of(context).dividerColor.withOpacity(0.1),
           ),

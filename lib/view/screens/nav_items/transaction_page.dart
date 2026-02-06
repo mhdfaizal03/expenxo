@@ -5,9 +5,13 @@ import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
 import 'package:expenxo/view/screens/add_categories_page.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:expenxo/view/widgets/transaction_item_widget.dart';
+import 'package:expenxo/view/widgets/glass_container.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -257,7 +261,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       border: Border.all(
                         color: isSelected
                             ? AppColors.mainColor
-                            : Theme.of(context).dividerColor,
+                            : Theme.of(context).dividerColor.withOpacity(0.2),
                         width: 1.5,
                       ),
                       boxShadow: isSelected
@@ -355,28 +359,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
         setState(() => _typeFilter = isSelected ? null : type);
         Navigator.pop(context);
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withOpacity(0.1)
-              : Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? color : Theme.of(context).dividerColor,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : [],
-        ),
+      child: GlassContainer(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        color: isSelected
+            ? color.withOpacity(0.1)
+            : Theme.of(context).brightness == Brightness.dark
+            ? AppColors.glassBgDark
+            : AppColors.glassBgLight,
+        borderColor: isSelected ? color : null,
+        borderOpacity: isSelected ? 1.0 : 0.2,
         child: Column(
           children: [
             Container(
@@ -651,42 +642,30 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   horizontal: 20,
                   vertical: 10,
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  decoration: InputDecoration(
-                    hintText: "Search transactions...",
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      size: 24,
-                      color: Theme.of(
-                        context,
-                      ).iconTheme.color?.withOpacity(0.5),
-                    ),
-                    filled: true,
-                    fillColor: Theme.of(context).cardColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: Theme.of(context).dividerColor,
-                        width: 1,
+                child: GlassContainer(
+                  borderRadius: 16,
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: "Search transactions...",
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        size: 24,
+                        color: Theme.of(
+                          context,
+                        ).iconTheme.color?.withOpacity(0.5),
                       ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: AppColors.mainColor,
-                        width: 1.5,
+                      filled: true,
+                      fillColor: Colors.transparent,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14, // Adjusted for centering
+                        horizontal: 20,
                       ),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 0,
-                      horizontal: 20,
                     ),
                   ),
                 ),
@@ -732,10 +711,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           .getTransactions(), // Fetch Transactions
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
+                                ConnectionState.waiting &&
+                            !snapshot.hasData) {
+                          return const Center(child: ShimmerList());
                         }
                         if (!snapshot.hasData || snapshot.data!.isEmpty) {
                           return Center(
@@ -851,34 +829,17 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     return GestureDetector(
       onTap: () => _onFilterSelected(label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: GlassContainer(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.mainColor : Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isSelected
-                ? Colors.transparent
-                : Theme.of(context).dividerColor,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.mainColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Theme.of(context).shadowColor.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
+        borderRadius: 30,
+        color: isSelected
+            ? AppColors.mainColor
+            : Theme.of(context).brightness == Brightness.dark
+            ? AppColors.glassBgDark
+            : AppColors.glassBgLight,
+        borderColor: isSelected ? Colors.transparent : null,
+        borderOpacity: isSelected ? 0 : 0.2,
         child: Row(
           children: [
             if (icon != null) ...[
@@ -930,121 +891,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
     // Dynamic Icon Lookup
     IconData icon = _getCategoryIcon(transaction.category, customCategories);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white.withOpacity(0.05)
-                  : const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(icon, color: Colors.blueGrey.shade300, size: 24),
-          ),
-          const SizedBox(width: 18),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.title.isNotEmpty
-                      ? transaction.title
-                      : transaction.category,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                if (transaction.description.isNotEmpty)
-                  Text(
-                    transaction.description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                  ),
-                const SizedBox(height: 4),
-                Text(
-                  dateFormat.format(transaction.date),
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          // Amount and Actions
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "$prefix${currencyFormat.format(transaction.amount)}",
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: amountColor,
-                  fontSize: 16,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  // Delete Action
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        bool? confirm = await DialogUtils.showConfirmDialog(
-                          context: context,
-                          title: "Delete Transaction?",
-                          message:
-                              "This transaction will be permanently removed. This action cannot be undone.",
-                          isDestructive: true,
-                          confirmLabel: "Delete",
-                        );
-
-                        if (confirm == true) {
-                          await Provider.of<FirestoreService>(
-                            context,
-                            listen: false,
-                          ).deleteTransaction(transaction.id);
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Padding(
-                        padding: const EdgeInsets.all(6.0),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          size: 20,
-                          color: Colors.redAccent.withOpacity(0.7),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+    return TransactionItemWidget(
+      transaction: transaction,
+      currencyFormat: currencyFormat,
+      dateFormat: dateFormat,
+      icon: icon,
     );
   }
 }

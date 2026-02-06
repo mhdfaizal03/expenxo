@@ -27,6 +27,32 @@ class NotificationModel {
     };
   }
 
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'id': id,
+      'title': title,
+      'body': body,
+      'timestamp': timestamp.toIso8601String(),
+      'isRead': isRead,
+      'type': type,
+    };
+  }
+
+  factory NotificationModel.fromMap(Map<String, dynamic> data, {String? id}) {
+    return NotificationModel(
+      id: id ?? data['id'] ?? '',
+      title: data['title'] ?? '',
+      body: data['body'] ?? '',
+      timestamp: data['timestamp'] is Timestamp
+          ? (data['timestamp'] as Timestamp).toDate()
+          : (data['timestamp'] is String
+                ? DateTime.parse(data['timestamp'])
+                : DateTime.now()),
+      isRead: data['isRead'] ?? false,
+      type: data['type'] ?? 'info',
+    );
+  }
+
   factory NotificationModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return NotificationModel(

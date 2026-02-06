@@ -4,8 +4,11 @@ import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/utils/toast_util.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:expenxo/view/widgets/glass_container.dart';
 
 class AddBudgetPage extends StatefulWidget {
   const AddBudgetPage({super.key});
@@ -94,12 +97,11 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
             const SizedBox(height: 20),
 
             _buildLabel("Period"),
-            Container(
+            _buildLabel("Period"),
+            GlassContainer(
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
+              borderRadius: 20,
+              borderOpacity: 0.1,
               child: ToggleButtons(
                 isSelected: _selection,
                 onPressed: (int index) {
@@ -109,7 +111,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                     }
                   });
                 },
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
                 selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
                 fillColor: Theme.of(context).scaffoldBackgroundColor,
                 renderBorder: false,
@@ -217,7 +219,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       side: const BorderSide(color: Color(0xFFE2E8F0)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                     child: Text(
@@ -237,18 +239,11 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
+                        ? const ShimmerLoading.circular(width: 20, height: 20)
                         : const Text(
                             "Save Budget",
                             style: TextStyle(
@@ -261,7 +256,7 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
               ],
             ),
           ],
-        ),
+        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
       ),
     );
   }
@@ -350,11 +345,11 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     fillColor: Theme.of(context).cardColor,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(20),
       borderSide: BorderSide(color: Theme.of(context).dividerColor),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(20),
       borderSide: BorderSide(color: AppColors.mainColor),
     ),
   );
@@ -374,13 +369,11 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
   }
 
   Widget _buildInfoCard(IconData icon, String text) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
+      borderRadius: 20,
+      borderOpacity: 0.2, // Slightly more visible for info cards
+      borderColor: Theme.of(context).dividerColor,
       child: Row(
         children: [
           Icon(icon, color: AppColors.mainColor, size: 20),

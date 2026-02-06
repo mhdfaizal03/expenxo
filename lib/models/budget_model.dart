@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BudgetModel {
@@ -24,6 +23,28 @@ class BudgetModel {
     required this.notifyExceed,
   });
 
+  factory BudgetModel.fromMap(Map<String, dynamic> data, {String? id}) {
+    return BudgetModel(
+      id: id ?? data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      category: data['category'] ?? '',
+      amount: (data['amount'] ?? 0.0).toDouble(),
+      period: data['period'] ?? 'Monthly',
+      startDate: data['startDate'] is Timestamp
+          ? (data['startDate'] as Timestamp).toDate()
+          : (data['startDate'] is String
+                ? DateTime.parse(data['startDate'])
+                : DateTime.now()),
+      endDate: data['endDate'] is Timestamp
+          ? (data['endDate'] as Timestamp).toDate()
+          : (data['endDate'] is String
+                ? DateTime.parse(data['endDate'])
+                : DateTime.now()),
+      autoRepeat: data['autoRepeat'] ?? false,
+      notifyExceed: data['notifyExceed'] ?? false,
+    );
+  }
+
   factory BudgetModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return BudgetModel(
@@ -47,6 +68,20 @@ class BudgetModel {
       'period': period,
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
+      'autoRepeat': autoRepeat,
+      'notifyExceed': notifyExceed,
+    };
+  }
+
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'id': id,
+      'userId': userId,
+      'category': category,
+      'amount': amount,
+      'period': period,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate.toIso8601String(),
       'autoRepeat': autoRepeat,
       'notifyExceed': notifyExceed,
     };

@@ -3,11 +3,13 @@ import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/utils/toast_util.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class AddIncomePage extends StatefulWidget {
   const AddIncomePage({super.key});
@@ -201,12 +203,12 @@ class _AddIncomePageState extends State<AddIncomePage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.mainColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   elevation: 0,
                 ),
                 child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const ShimmerLoading.circular(width: 20, height: 20)
                     : const Text(
                         'Save Income',
                         style: TextStyle(
@@ -218,7 +220,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
               ),
             ),
           ],
-        ),
+        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
       ),
     );
   }
@@ -253,11 +255,11 @@ class _AddIncomePageState extends State<AddIncomePage> {
       hintStyle: TextStyle(color: Theme.of(context).hintColor, fontSize: 14),
       contentPadding: const EdgeInsets.all(16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(color: Theme.of(context).dividerColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(color: AppColors.mainColor),
       ),
     );

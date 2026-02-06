@@ -5,10 +5,13 @@ import 'package:expenxo/utils/ui/ui_helper.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 
 import 'package:expenxo/view/screens/nav_items/add_budget_page.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:expenxo/view/widgets/glass_container.dart';
 
 class BudgetPlannerPage extends StatelessWidget {
   const BudgetPlannerPage({super.key});
@@ -33,8 +36,9 @@ class BudgetPlannerPage extends StatelessWidget {
           child: StreamBuilder<List<BudgetModel>>(
             stream: firestoreService.getBudgets(),
             builder: (context, budgetSnapshot) {
-              if (budgetSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+              if (budgetSnapshot.connectionState == ConnectionState.waiting &&
+                  !budgetSnapshot.hasData) {
+                return const ShimmerCard(height: 180);
               }
 
               final budgets = budgetSnapshot.data ?? [];
@@ -216,19 +220,38 @@ class BudgetPlannerPage extends StatelessWidget {
                                                             );
                                                       }
                                                     },
-                                                    child: _buildCategoryBudget(
-                                                      context: context,
-                                                      icon: icon,
-                                                      title: budget.category,
-                                                      allocated: currencyFormat
-                                                          .format(
-                                                            budget.amount,
-                                                          ),
-                                                      spent: currencyFormat
-                                                          .format(spent),
-                                                      progress: progress,
-                                                      isOverBudget: isOver,
-                                                    ),
+                                                    child:
+                                                        _buildCategoryBudget(
+                                                              context: context,
+                                                              icon: icon,
+                                                              title: budget
+                                                                  .category,
+                                                              allocated:
+                                                                  currencyFormat
+                                                                      .format(
+                                                                        budget
+                                                                            .amount,
+                                                                      ),
+                                                              spent:
+                                                                  currencyFormat
+                                                                      .format(
+                                                                        spent,
+                                                                      ),
+                                                              progress:
+                                                                  progress,
+                                                              isOverBudget:
+                                                                  isOver,
+                                                            )
+                                                            .animate()
+                                                            .fadeIn(
+                                                              delay:
+                                                                  (budgets.indexOf(
+                                                                            budget,
+                                                                          ) *
+                                                                          50)
+                                                                      .ms,
+                                                            )
+                                                            .slideX(begin: 0.1),
                                                   ),
                                                 );
                                               }).toList(),
@@ -386,17 +409,27 @@ class BudgetPlannerPage extends StatelessWidget {
                                             ).deleteBudget(budget.id);
                                           }
                                         },
-                                        child: _buildCategoryBudget(
-                                          context: context,
-                                          icon: icon,
-                                          title: budget.category,
-                                          allocated: currencyFormat.format(
-                                            budget.amount,
-                                          ),
-                                          spent: currencyFormat.format(spent),
-                                          progress: progress,
-                                          isOverBudget: isOver,
-                                        ),
+                                        child:
+                                            _buildCategoryBudget(
+                                                  context: context,
+                                                  icon: icon,
+                                                  title: budget.category,
+                                                  allocated: currencyFormat
+                                                      .format(budget.amount),
+                                                  spent: currencyFormat.format(
+                                                    spent,
+                                                  ),
+                                                  progress: progress,
+                                                  isOverBudget: isOver,
+                                                )
+                                                .animate()
+                                                .fadeIn(
+                                                  delay:
+                                                      (budgets.indexOf(budget) *
+                                                              50)
+                                                          .ms,
+                                                )
+                                                .slideX(begin: 0.1),
                                       );
                                     }).toList(),
                                 ],
@@ -443,22 +476,10 @@ class BudgetPlannerPage extends StatelessWidget {
     double progress,
     NumberFormat fmt,
   ) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 20,
+      borderOpacity: 0.1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -541,23 +562,11 @@ class BudgetPlannerPage extends StatelessWidget {
     bool isOverBudget = false,
     Color? color,
   }) {
-    return Container(
+    return GlassContainer(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: 20,
+      borderOpacity: 0.1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

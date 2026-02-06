@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/responsive/responsive_layout.dart';
 import 'package:expenxo/view/screens/nav_items/ai_assistant_page.dart';
@@ -16,7 +17,6 @@ class NavBar extends StatefulWidget {
 }
 
 class _NavBarState extends State<NavBar> {
-  late final PageController _pageController;
   int selectedIndex = 0;
 
   final List<Map<String, dynamic>> navItems = [
@@ -48,20 +48,7 @@ class _NavBarState extends State<NavBar> {
     },
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: selectedIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   void _onNavTap(int index) {
-    _pageController.jumpToPage(index);
     setState(() => selectedIndex = index);
   }
 
@@ -75,40 +62,40 @@ class _NavBarState extends State<NavBar> {
 
   Widget _buildMobileScaffold() {
     return Scaffold(
-      body: PageView.builder(
-        controller: _pageController,
-        itemCount: navItems.length,
-        physics: const ClampingScrollPhysics(),
-        onPageChanged: (index) {
-          setState(() => selectedIndex = index);
-        },
-        itemBuilder: (context, index) {
-          return navItems[index]["page"];
-        },
+      body: IndexedStack(
+        index: selectedIndex,
+        children: navItems.map((e) => e["page"] as Widget).toList(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 10.0),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 15),
+          margin: const EdgeInsets.only(bottom: 10),
           height: 65,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: Theme.of(context).cardColor,
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 10,
-                color: Theme.of(context).shadowColor.withOpacity(0.1),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(50)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(50),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(
+                    color: Colors.green.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: List.generate(navItems.length, (index) {
+                    final item = navItems[index];
+                    return _buildNavItem(index, item);
+                  }),
+                ),
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(navItems.length, (index) {
-              final item = navItems[index];
-              return _buildNavItem(index, item);
-            }),
+            ),
           ),
         ),
       ),
@@ -177,7 +164,7 @@ class _NavBarState extends State<NavBar> {
                               color: isSelected
                                   ? AppColors.mainColor.withOpacity(0.1)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
                               children: [
@@ -194,7 +181,7 @@ class _NavBarState extends State<NavBar> {
                                 Text(
                                   item["name"],
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 12,
                                     fontWeight: isSelected
                                         ? FontWeight.w600
                                         : FontWeight.w400,
@@ -219,17 +206,9 @@ class _NavBarState extends State<NavBar> {
           ),
           // Main Content
           Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: navItems.length,
-              physics:
-                  const NeverScrollableScrollPhysics(), // Disable swipe on desktop
-              onPageChanged: (index) {
-                setState(() => selectedIndex = index);
-              },
-              itemBuilder: (context, index) {
-                return navItems[index]["page"];
-              },
+            child: IndexedStack(
+              index: selectedIndex,
+              children: navItems.map((e) => e["page"] as Widget).toList(),
             ),
           ),
         ],
@@ -255,6 +234,7 @@ class _NavBarState extends State<NavBar> {
           const SizedBox(height: 4),
           Text(
             item["name"],
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
               color: isSelected

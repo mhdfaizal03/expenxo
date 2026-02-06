@@ -6,11 +6,15 @@ import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/view/screens/income_n_expense/add_expense.dart';
 import 'package:expenxo/view/screens/income_n_expense/add_income_page.dart';
 import 'package:expenxo/view/screens/notification_page.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import 'package:expenxo/utils/ui/ui_helper.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:expenxo/view/widgets/transaction_item_widget.dart';
+import 'package:expenxo/view/widgets/glass_container.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -191,8 +195,9 @@ class _HomePageState extends State<HomePage> {
     return StreamBuilder<List<TransactionModel>>(
       stream: firestoreService.getTransactions(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const ShimmerList(itemCount: 4);
         }
 
         final prefs = Provider.of<PreferencesProvider>(context);
@@ -297,13 +302,21 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 direction: Axis.vertical,
                 children: [
-                  _buildGreetingAndDateFilter(context, firestoreService),
+                  _buildGreetingAndDateFilter(
+                    context,
+                    firestoreService,
+                  ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.1),
                   const SizedBox(height: 10),
                   // Filter Dropdown
-                  _buildFilterDropdown(context),
+                  _buildFilterDropdown(
+                    context,
+                  ).animate().fadeIn(delay: 100.ms, duration: 400.ms),
                   const SizedBox(height: 10),
                   // Current Balance Card
-                  _buildBalanceCard(currentBalance, currencyFormat),
+                  _buildBalanceCard(currentBalance, currencyFormat)
+                      .animate()
+                      .fadeIn(delay: 200.ms, duration: 500.ms)
+                      .scale(begin: const Offset(0.95, 0.95)),
                   const SizedBox(height: 24),
                   // Monthly Overview Card
                   _buildOverviewCard(
@@ -311,23 +324,26 @@ class _HomePageState extends State<HomePage> {
                     totalIncome,
                     totalExpense,
                     currencyFormat,
-                  ),
+                  ).animate().fadeIn(delay: 300.ms, duration: 500.ms),
                   const SizedBox(height: 20),
                   // Action Buttons
-                  _buildActionButtons(context),
+                  _buildActionButtons(context)
+                      .animate()
+                      .fadeIn(delay: 400.ms, duration: 500.ms)
+                      .slideY(begin: 0.1),
                   const SizedBox(height: 32),
                   // Latest Transactions Section
-                  _buildRecentActivityHeader(),
+                  _buildRecentActivityHeader().animate().fadeIn(delay: 500.ms),
                   const SizedBox(height: 16),
                   _buildRecentActivityContent(
                     context,
                     lastIncome,
                     lastExpense,
                     currencyFormat,
-                  ),
+                  ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1),
                   const SizedBox(height: 15),
                   // AI Insights
-                  _buildAIInsights(context),
+                  _buildAIInsights(context).animate().fadeIn(delay: 700.ms),
                 ],
               ),
             ),
@@ -415,12 +431,8 @@ class _HomePageState extends State<HomePage> {
               // Right Column (Activity List)
               Expanded(
                 flex: 2,
-                child: Container(
+                child: GlassContainer(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -445,10 +457,11 @@ class _HomePageState extends State<HomePage> {
                             .map(
                               (t) => Column(
                                 children: [
-                                  _buildDesktopTransactionItem(
-                                    context,
-                                    t,
-                                    currencyFormat,
+                                  TransactionItemWidget(
+                                    transaction: t,
+                                    currencyFormat: currencyFormat,
+                                    dateFormat: DateFormat('MMM dd, yyyy'),
+                                    icon: Icons.receipt_long_rounded,
                                   ),
                                   const Divider(height: 24, thickness: 0.5),
                                 ],
@@ -801,8 +814,8 @@ class _HomePageState extends State<HomePage> {
                 size: 18,
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
-              SizedBox(width: 8),
-              Text(
+              const SizedBox(width: 8),
+              const Text(
                 'AI Insights',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
@@ -834,66 +847,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDesktopTransactionItem(
-    BuildContext context,
-    TransactionModel t,
-    NumberFormat fmt,
-  ) {
-    final isExpense = t.type == 'Expense';
-    final color = isExpense ? Colors.redAccent : AppColors.mainColor;
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            isExpense ? Icons.arrow_outward : Icons.arrow_downward,
-            color: color,
-            size: 18,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                t.title.isNotEmpty ? t.title : t.category,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                DateFormat('MMM dd, yyyy').format(t.date),
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          fmt.format(t.amount),
-          style: TextStyle(color: color, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
   // UI Helpers
   Widget _buildSectionCard({
     required Widget child,
     required BuildContext context,
   }) {
-    return Container(
+    return GlassContainer(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-        ),
-      ),
       child: child,
     );
   }
@@ -944,7 +905,7 @@ class _HomePageState extends State<HomePage> {
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 0,
       ),
     );
@@ -958,64 +919,49 @@ class _HomePageState extends State<HomePage> {
     Color graphColor, [
     String? label,
   ]) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-        ),
-      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment
-            .spaceBetween, // Use spaceBetween instead of Spacer
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (label != null) ...[
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: graphColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(icon, size: 24, color: graphColor),
-                  Flexible(
-                    child: Text(
-                      title,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ),
-                ],
+          if (label != null) ...[
+            Text(
+              label,
+              style: TextStyle(
+                color: graphColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
               ),
-              const SizedBox(height: 12),
-              Text(
-                amount,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, size: 24, color: graphColor),
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),
             ],
           ),
-          // Placeholder for the Sparkline graph (pushed to bottom)
+          const SizedBox(height: 12),
+          Text(
+            amount,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          // Placeholder for the Sparkline graph
           Container(
             height: 40,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: graphColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: graphColor.withAlpha((0.1 * 255).toInt()),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(Icons.show_chart, color: graphColor),
           ),

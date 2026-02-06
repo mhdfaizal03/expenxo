@@ -21,6 +21,17 @@ class CategoryModel {
     required this.type,
   });
 
+  factory CategoryModel.fromMap(Map<String, dynamic> data, {String? id}) {
+    return CategoryModel(
+      id: id ?? data['id'] ?? '',
+      userId: data['userId'] ?? '',
+      name: data['name'] ?? '',
+      iconCode: data['iconCode'] ?? 58835,
+      colorHex: data['colorHex'] ?? 'FF000000',
+      type: data['type'] ?? 'Expense',
+    );
+  }
+
   factory CategoryModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return CategoryModel(
@@ -35,6 +46,17 @@ class CategoryModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'userId': userId,
+      'name': name,
+      'iconCode': iconCode,
+      'colorHex': colorHex,
+      'type': type,
+    };
+  }
+
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'id': id,
       'userId': userId,
       'name': name,
       'iconCode': iconCode,

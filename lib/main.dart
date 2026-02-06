@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService().initialize();
   runApp(const MyApp());
@@ -96,7 +97,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 error: AppColors.error,
               ),
               iconTheme: const IconThemeData(color: AppColors.iconLight),
-              textTheme: GoogleFonts.abelTextTheme().apply(
+              textTheme: GoogleFonts.poppinsTextTheme().apply(
                 bodyColor: AppColors.textPrimaryLight,
                 displayColor: AppColors.textPrimaryLight,
               ),
@@ -125,8 +126,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 error: AppColors.error,
               ),
               iconTheme: const IconThemeData(color: AppColors.iconDark),
-              textTheme: GoogleFonts.abelTextTheme(ThemeData.dark().textTheme)
-                  .apply(
+              textTheme:
+                  GoogleFonts.poppinsTextTheme(
+                    ThemeData.dark().textTheme,
+                  ).apply(
                     bodyColor: AppColors.textPrimaryDark,
                     displayColor: AppColors.textPrimaryDark,
                   ),

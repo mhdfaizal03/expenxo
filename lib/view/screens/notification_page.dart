@@ -1,9 +1,11 @@
 import 'package:expenxo/models/notification_model.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class NotificationPage extends StatelessWidget {
   const NotificationPage({super.key});
@@ -47,8 +49,9 @@ class NotificationPage extends StatelessWidget {
       body: StreamBuilder<List<NotificationModel>>(
         stream: firestoreService.getNotifications(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
+            return const ShimmerList();
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -91,7 +94,7 @@ class NotificationPage extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 20),
                   decoration: BoxDecoration(
                     color: AppColors.error,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
@@ -99,7 +102,11 @@ class NotificationPage extends StatelessWidget {
                   // No-op
                 },
                 confirmDismiss: (_) async => false,
-                child: _buildNotificationItem(context, n, firestoreService),
+                child: _buildNotificationItem(
+                  context,
+                  n,
+                  firestoreService,
+                ).animate().fadeIn(delay: (index * 50).ms).slideY(begin: 0.1),
               );
             },
           );
@@ -155,7 +162,7 @@ class NotificationPage extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: n.isRead
               ? Theme.of(context).dividerColor.withOpacity(0.1)

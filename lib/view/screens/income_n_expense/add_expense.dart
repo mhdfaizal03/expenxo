@@ -4,11 +4,13 @@ import 'package:expenxo/services/auth_service.dart';
 import 'package:expenxo/services/firestore_service.dart';
 import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/ui/ui_helper.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
 import 'package:expenxo/utils/toast_util.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class AddExpensePage extends StatefulWidget {
   const AddExpensePage({super.key});
@@ -251,7 +253,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: Theme.of(context).dividerColor,
                   style: BorderStyle.solid,
@@ -281,7 +283,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
             ),
           ],
-        ),
+        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -293,12 +295,12 @@ class _AddExpensePageState extends State<AddExpensePage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.mainColor,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
               ),
               elevation: 0,
             ),
             child: _isLoading
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? const ShimmerLoading.circular(width: 20, height: 20)
                 : const Text(
                     'Save Expense',
                     style: TextStyle(
@@ -341,11 +343,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
       hintStyle: TextStyle(color: Theme.of(context).hintColor, fontSize: 14),
       contentPadding: const EdgeInsets.all(16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(color: Theme.of(context).dividerColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(color: AppColors.mainColor),
       ),
     );

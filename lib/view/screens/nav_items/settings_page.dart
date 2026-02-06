@@ -10,6 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:expenxo/view/widgets/glass_container.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -235,7 +237,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 100),
               ],
-            ),
+            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
           ),
         );
       },
@@ -261,22 +263,10 @@ class _SettingsPageState extends State<SettingsPage> {
               MaterialPageRoute(builder: (context) => const EditProfilePage()),
             ).then((_) => setState(() {})); // Refresh on return
           },
-          child: Container(
+          child: GlassContainer(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.1),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).shadowColor.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            borderRadius: 20,
+            borderOpacity: 0.1,
             child: Row(
               children: [
                 CircleAvatar(
@@ -366,23 +356,11 @@ class _SettingsPageState extends State<SettingsPage> {
     required String title,
     required List<Widget> children,
   }) {
-    return Container(
+    return GlassContainer(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withOpacity(0.02),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: 20,
+      borderOpacity: 0.1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -10,10 +10,12 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:expenxo/services/local_storage_service.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final LocalStorageService _localStorage = LocalStorageService();
 
   String? get _userId => _auth.currentUser?.uid;
 
@@ -126,19 +128,37 @@ class FirestoreService {
     }
   }
 
-  // Get Transactions Stream
-  Stream<List<TransactionModel>> getTransactions() {
-    if (_userId == null) return Stream.value([]);
-    return _firestore
+  // Get Transactions Stream with Caching
+  Stream<List<TransactionModel>> getTransactions() async* {
+    if (_userId == null) {
+      yield [];
+      return;
+    }
+
+    // 1. Emit Cached Data First
+    final cached = await _localStorage.getCachedTransactions();
+    if (cached.isNotEmpty) {
+      yield cached.map((data) => TransactionModel.fromMap(data)).toList();
+    }
+
+    // 2. Listen to Firestore and Update Cache
+    yield* _firestore
         .collection('users')
         .doc(_userId)
         .collection('transactions')
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
+          final transactions = snapshot.docs
               .map((doc) => TransactionModel.fromFirestore(doc))
               .toList();
+
+          // Background cache update
+          _localStorage.cacheTransactions(
+            transactions.map((t) => t.toJsonMap()).toList(),
+          );
+
+          return transactions;
         });
   }
 
@@ -190,19 +210,37 @@ class FirestoreService {
     }
   }
 
-  // Get Budgets Stream
-  Stream<List<BudgetModel>> getBudgets() {
-    if (_userId == null) return Stream.value([]);
-    return _firestore
+  // Get Budgets Stream with Caching
+  Stream<List<BudgetModel>> getBudgets() async* {
+    if (_userId == null) {
+      yield [];
+      return;
+    }
+
+    // 1. Emit Cached Data First
+    final cached = await _localStorage.getCachedBudgets();
+    if (cached.isNotEmpty) {
+      yield cached.map((data) => BudgetModel.fromMap(data)).toList();
+    }
+
+    // 2. Listen to Firestore and Update Cache
+    yield* _firestore
         .collection('users')
         .doc(_userId)
         .collection('budgets')
         .orderBy('startDate', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
+          final budgets = snapshot.docs
               .map((doc) => BudgetModel.fromFirestore(doc))
               .toList();
+
+          // Background cache update
+          _localStorage.cacheBudgets(
+            budgets.map((b) => b.toJsonMap()).toList(),
+          );
+
+          return budgets;
         });
   }
 
@@ -234,19 +272,37 @@ class FirestoreService {
     }
   }
 
-  // Get Categories Stream
-  Stream<List<CategoryModel>> getCategories() {
-    if (_userId == null) return Stream.value([]);
-    return _firestore
+  // Get Categories Stream with Caching
+  Stream<List<CategoryModel>> getCategories() async* {
+    if (_userId == null) {
+      yield [];
+      return;
+    }
+
+    // 1. Emit Cached Data First
+    final cached = await _localStorage.getCachedCategories();
+    if (cached.isNotEmpty) {
+      yield cached.map((data) => CategoryModel.fromMap(data)).toList();
+    }
+
+    // 2. Listen to Firestore and Update Cache
+    yield* _firestore
         .collection('users')
         .doc(_userId)
         .collection('categories')
         .orderBy('name')
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
+          final categories = snapshot.docs
               .map((doc) => CategoryModel.fromFirestore(doc))
               .toList();
+
+          // Background cache update
+          _localStorage.cacheCategories(
+            categories.map((c) => c.toJsonMap()).toList(),
+          );
+
+          return categories;
         });
   }
 
@@ -276,19 +332,37 @@ class FirestoreService {
     }
   }
 
-  // Get Notifications Stream
-  Stream<List<NotificationModel>> getNotifications() {
-    if (_userId == null) return Stream.value([]);
-    return _firestore
+  // Get Notifications Stream with Caching
+  Stream<List<NotificationModel>> getNotifications() async* {
+    if (_userId == null) {
+      yield [];
+      return;
+    }
+
+    // 1. Emit Cached Data First
+    final cached = await _localStorage.getCachedNotifications();
+    if (cached.isNotEmpty) {
+      yield cached.map((data) => NotificationModel.fromMap(data)).toList();
+    }
+
+    // 2. Listen to Firestore and Update Cache
+    yield* _firestore
         .collection('users')
         .doc(_userId)
         .collection('notifications')
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
+          final notifications = snapshot.docs
               .map((doc) => NotificationModel.fromFirestore(doc))
               .toList();
+
+          // Background cache update
+          _localStorage.cacheNotifications(
+            notifications.map((n) => n.toJsonMap()).toList(),
+          );
+
+          return notifications;
         });
   }
 
@@ -428,6 +502,9 @@ class FirestoreService {
     if (_userId == null) return;
 
     try {
+      // Clear Local Cache
+      await _localStorage.clearCache();
+
       // 1. Delete Transactions
       final tSnap = await _firestore
           .collection('users')
@@ -510,6 +587,68 @@ class FirestoreService {
   }
 
   // --- Sync & Backup Management ---
+
+  Future<void> prefetchAllData() async {
+    if (_userId == null) return;
+    try {
+      // Fetch all in parallel for speed
+      final results = await Future.wait([
+        _firestore
+            .collection('users')
+            .doc(_userId)
+            .collection('transactions')
+            .orderBy('date', descending: true)
+            .get(),
+        _firestore
+            .collection('users')
+            .doc(_userId)
+            .collection('budgets')
+            .orderBy('startDate', descending: true)
+            .get(),
+        _firestore
+            .collection('users')
+            .doc(_userId)
+            .collection('categories')
+            .orderBy('name')
+            .get(),
+        _firestore
+            .collection('users')
+            .doc(_userId)
+            .collection('notifications')
+            .orderBy('timestamp', descending: true)
+            .get(),
+      ]);
+
+      final transactions = results[0].docs
+          .map((doc) => TransactionModel.fromFirestore(doc))
+          .toList();
+      final budgets = results[1].docs
+          .map((doc) => BudgetModel.fromFirestore(doc))
+          .toList();
+      final categories = results[2].docs
+          .map((doc) => CategoryModel.fromFirestore(doc))
+          .toList();
+      final notifications = results[3].docs
+          .map((doc) => NotificationModel.fromFirestore(doc))
+          .toList();
+
+      // Cache all
+      await Future.wait([
+        _localStorage.cacheTransactions(
+          transactions.map((t) => t.toJsonMap()).toList(),
+        ),
+        _localStorage.cacheBudgets(budgets.map((b) => b.toJsonMap()).toList()),
+        _localStorage.cacheCategories(
+          categories.map((c) => c.toJsonMap()).toList(),
+        ),
+        _localStorage.cacheNotifications(
+          notifications.map((n) => n.toJsonMap()).toList(),
+        ),
+      ]);
+    } catch (e) {
+      print("Error prefetching data: $e");
+    }
+  }
 
   Future<String?> getLastSyncTime() async {
     final prefs = await SharedPreferences.getInstance();

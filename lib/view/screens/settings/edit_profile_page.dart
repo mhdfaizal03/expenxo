@@ -3,6 +3,8 @@ import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -147,13 +149,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     color: Theme.of(context).iconTheme.color,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide(
                       color: Theme.of(context).dividerColor.withOpacity(0.2),
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                     borderSide: const BorderSide(color: AppColors.mainColor),
                   ),
                 ),
@@ -177,13 +179,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     color: Theme.of(context).iconTheme.color,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide(
                       color: Theme.of(context).dividerColor.withOpacity(0.2),
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                     borderSide: const BorderSide(color: AppColors.mainColor),
                   ),
                 ),
@@ -199,18 +201,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.mainColor,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
+                      ? const ShimmerLoading.circular(width: 20, height: 20)
                       : const Text(
                           "Save Changes",
                           style: TextStyle(
@@ -222,7 +217,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
               ),
             ],
-          ),
+          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
         ),
       ),
     );

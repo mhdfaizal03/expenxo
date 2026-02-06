@@ -1,5 +1,6 @@
 import 'package:expenxo/view/screens/add_categories_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class CategoriesPage extends StatelessWidget {
   const CategoriesPage({super.key});
@@ -70,7 +71,7 @@ class CategoriesPage extends StatelessWidget {
             name: item['name'],
             icon: item['icon'],
             isSpecial: item['isSpecial'] ?? false,
-          );
+          ).animate().fadeIn(delay: (index * 50).ms).slideX(begin: 0.1);
         },
       ),
     );
@@ -85,7 +86,7 @@ class CategoriesPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFF0F0F0)),
         boxShadow: [
           BoxShadow(

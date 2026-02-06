@@ -7,6 +7,8 @@ import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:expenxo/providers/preferences_provider.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -232,19 +234,12 @@ class _LoginPageState extends State<LoginPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.mainColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 elevation: 0,
               ),
               child: _isLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
+                  ? const ShimmerLoading.circular(width: 20, height: 20)
                   : const Text(
                       'Sign In',
                       style: TextStyle(
@@ -298,7 +293,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 side: BorderSide(color: Theme.of(context).dividerColor),
               ),
@@ -337,7 +332,7 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
         ],
-      ),
+      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1),
     );
   }
 
@@ -371,13 +366,13 @@ class _LoginPageState extends State<LoginPage> {
       filled: true,
       fillColor: Theme.of(context).cardColor,
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(
           color: Theme.of(context).dividerColor.withOpacity(0.1),
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: AppColors.mainColor),
       ),
     );

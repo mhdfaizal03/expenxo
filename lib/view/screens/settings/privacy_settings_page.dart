@@ -2,7 +2,9 @@ import 'package:expenxo/utils/constands/colors.dart';
 import 'package:expenxo/utils/toast_util.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:expenxo/view/widgets/shimmer_loading.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:expenxo/services/firestore_service.dart';
 
 class PrivacySettingsPage extends StatefulWidget {
@@ -118,11 +120,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ),
             ),
             trailing: _isSyncing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const ShimmerLoading.circular(width: 20, height: 20)
                 : IconButton(
                     icon: const Icon(Icons.sync, color: AppColors.mainColor),
                     onPressed: _handleManualSync,
@@ -138,11 +136,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: _isExporting
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const ShimmerLoading.circular(width: 24, height: 24)
                 : const Icon(Icons.download, color: AppColors.mainColor),
             title: Text(
               "Export Data (CSV)",
@@ -167,7 +161,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: AppColors.error.withOpacity(0.1),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
               onPressed: () {
@@ -197,7 +191,10 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                               context: context,
                               barrierDismissible: false,
                               builder: (context) => const Center(
-                                child: CircularProgressIndicator(),
+                                child: ShimmerLoading.circular(
+                                  width: 40,
+                                  height: 40,
+                                ),
                               ),
                             );
 
@@ -237,7 +234,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
             ),
           ),
         ],
-      ),
+      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
     );
   }
 
